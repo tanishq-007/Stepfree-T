@@ -56,6 +56,9 @@ async function main(): Promise<void> {
     for (const screen of SCREENS) {
       const context = await browser.createBrowserContext(); // fresh localStorage for every screen
       const page = await context.newPage();
+      // tsx (esbuild keepNames) wraps named functions in __name(); define it in the page so the evaluate()
+      // callbacks below (for example the reflow culprit finder) can run there.
+      await page.evaluateOnNewDocument("globalThis.__name = globalThis.__name || ((fn) => fn);");
       await page.setViewport({ width: 390, height: 844 });
       await page.goto(`${BASE}${screen.path}`, { waitUntil: "networkidle0", timeout: 30_000 });
       if (screen.ready) await page.waitForSelector(screen.ready, { timeout: 15_000 });

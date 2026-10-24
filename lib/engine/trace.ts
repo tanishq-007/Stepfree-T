@@ -5,10 +5,25 @@
 import type { AccessStatus, Alert, Station, TripResult, UserProfile } from "@/lib/types";
 import { STALE_AFTER_MINUTES } from "@/lib/types";
 import type { RouteRelationship } from "./journey";
+import type { UpcomingChange } from "./later-today";
+import type { PlanB } from "./plan-b";
 import { PROFILE_LABEL, PROFILE_SUMMARY } from "./profiles";
 import { alertKind } from "./rules";
 
-export type TraceKind = "check" | "data" | "freshness" | "profile" | "station" | "alert" | "notices" | "route" | "decision" | "cap" | "alternative";
+export type TraceKind =
+  | "check"
+  | "data"
+  | "freshness"
+  | "profile"
+  | "station"
+  | "alert"
+  | "notices"
+  | "route"
+  | "decision"
+  | "cap"
+  | "alternative"
+  | "planb"
+  | "later";
 
 export interface TraceTime {
   iso: string;
@@ -49,6 +64,10 @@ export interface TraceInput {
   checkedAt: string;
   /** Names for transfer station ids, when known. */
   stationName?: (id: string) => string | undefined;
+  /** planB() for this trip (null unless it is step-free now). Shown as what was checked, never as a verdict. */
+  planB?: PlanB | null;
+  /** laterToday() for this trip: planned outages that would make it worse. */
+  laterToday?: UpcomingChange[];
 }
 
 const SOURCE_TEXT: Record<TripResult["dataSource"], string> = {
@@ -222,15 +241,58 @@ export function buildTrace(input: TraceInput): TraceStep[] {
           },
     );
   }
+
+  const plan = input.planB;
+  if (plan) {
+    const spofs = plan.elevators.filter((e) => e.role === "no_backup");
+    const unchecked = plan.elevators.filter((e) => e.role === "cannot_check").length;
+    steps.push({
+      id: "planb",
+      kind: "planb",
+      title:
+        plan.elevators.length === 0
+          ? "Plan B checked: no elevator to depend on"
+          : plan.status === "resilient"
+            ? "Plan B checked: every elevator has a backup"
+            : plan.status === "fragile"
+              ? `Plan B checked: ${spofs.length === 1 ? "1 elevator has" : `${spofs.length} elevators have`} no backup`
+              : "Plan B checked: some elevators could not be checked",
+      detail: [
+        plan.elevators.length === 0
+          ? "The MBTA data lists no working elevator at your two stations, so no single elevator outage can break this trip."
+          : `We pretended each of the ${plan.elevators.length} working ${plan.elevators.length === 1 ? "elevator" : "elevators"} at your two stations broke, one at a time, and ran the same station check again.`,
+        ...spofs.map((e) => `${e.name}: no backup. ${e.alternative ? `Backup station: ${e.alternative.name}.` : "No checked backup station found."}`),
+        unchecked > 0 ? `${unchecked} could not be checked (not enough platform data).` : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
+      evidence: plan.elevators.map((e) => ({ label: e.facilityId, value: `${e.name} (${e.role.replace(/_/g, " ")})` })),
+    });
+  }
+
+  for (const c of input.laterToday ?? []) {
+    steps.push({
+      id: `later-${c.startsAt}`,
+      kind: "later",
+      title: c.status === "NOT_STEP_FREE" ? "Planned work later today would block this trip" : "Planned work later today: we could not confirm the trip",
+      // No status chip: this is a forecast, and a chip could be read as the verdict for now.
+      detail: `From this time, the trip result would be ${c.status} if nothing else changes. It does not change the result now.`,
+      time: realTime(c.startsAt, "Planned outage starts"),
+      mbtaText: c.alerts[0]?.header,
+      evidence: c.alerts.map((a) => ({ label: "Alert id", value: a.id })),
+    });
+  }
   return steps;
 }
 
 /** Every time a trace may legally contain. Used by the property test (I8). */
-export function allowedTraceTimes(input: Pick<TraceInput, "result" | "checkedAt">): Set<string> {
+export function allowedTraceTimes(input: Pick<TraceInput, "result" | "checkedAt" | "laterToday">): Set<string> {
   const out = new Set<string>([input.checkedAt, input.result.fetchedAt]);
   for (const a of [...input.result.blockingAlerts, ...input.result.infoAlerts]) {
     out.add(a.updatedAt);
     if (a.activePeriod[0]) out.add(a.activePeriod[0].start);
   }
+  // A planned outage's start, as laterToday() read it from the MBTA alert's active period.
+  for (const c of input.laterToday ?? []) out.add(c.startsAt);
   return out;
 }

@@ -7,6 +7,7 @@ import { GET as status } from "@/app/api/status/route";
 import { GET as demo } from "@/app/api/demo/route";
 import { GET as network } from "@/app/api/network/route";
 import { POST as explain } from "@/app/api/explain/route";
+import { DEMO_SCENARIOS, DEMO_TRIP_LABEL } from "@/lib/client/types";
 
 const get = (path: string) => new Request(`http://test.local${path}`);
 const post = (body: unknown) => new Request("http://test.local/api/explain", { method: "POST", body: JSON.stringify(body), headers: { "content-type": "application/json" } });
@@ -26,7 +27,7 @@ afterEach(() => {
   delete process.env.ANTHROPIC_API_KEY;
 });
 
-const SCENARIOS = ["elevator-outage-alewife", "all-clear", "api-down"] as const;
+const SCENARIOS = DEMO_SCENARIOS;
 
 describe("/api/network", () => {
   it("serves the committed MBTA geometry offline, labelled as reference snapshot data", async () => {
@@ -76,8 +77,27 @@ describe("/api/demo isolation (I5)", () => {
         expect(body.trip.profile).toBe(profile);
         expect(body.stations.every((s: Json) => demoIds.has(s.id))).toBe(true);
       }),
-      { numRuns: 9 },
+      { numRuns: 18 },
     );
+  });
+
+  it("the client's per-scenario trip label names the trip the route actually simulates", async () => {
+    for (const scenario of SCENARIOS) {
+      const body = await json(await demo(get(`/api/demo?scenario=${scenario}`)));
+      expect(`${body.trip.origin.name} to ${body.trip.destination.name}`).toBe(DEMO_TRIP_LABEL[scenario]);
+    }
+  });
+
+  it("every scenario carries Plan B, later-today and journey fields together", async () => {
+    for (const scenario of SCENARIOS) {
+      const body = await json(await demo(get(`/api/demo?scenario=${scenario}`)));
+      expect(body).toHaveProperty("planB");
+      expect(Array.isArray(body.laterToday)).toBe(true);
+      expect(body.journey.kind).toBe("direct");
+      // Plan B exists exactly when the engine says step-free now (never next to a current alternative).
+      expect(body.planB !== null).toBe(body.status === "STEP_FREE");
+      if (body.planB) expect(body.alternative).toBeNull();
+    }
   });
 
   it("the outage scenario turns Alewife red on the map and keeps Davis as the alternative", async () => {

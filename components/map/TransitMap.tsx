@@ -9,7 +9,8 @@
 //  - Plan B stations come only from the engine: the alternative for a problem now (green, "Recommended
 //    alternative") and planB() backups for a hypothetical elevator failure (blue, "Backup if an elevator
 //    fails"). The two differ by label text, not only colour.
-//  - The canvas is decorative for assistive tech: StationList is the accessible equivalent.
+//  - StationList is the full text equivalent of the canvas. The canvas region is named, and MapLibre's
+//    own controls (zoom, attribution, keyboard panning) stay reachable, so nothing focusable is aria-hidden.
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 import { Map as MlMap, Marker, NavigationControl, setWorkerUrl, type GeoJSONSource, type MapLayerMouseEvent } from "maplibre-gl";
@@ -167,6 +168,7 @@ export default function TransitMap(props: TransitMapProps) {
         pitchWithRotate: false,
         touchPitch: false,
         reduceMotion: reduce,
+        locale: { "Map.Title": "Map of MBTA stations and lines. The station list has the same stations and statuses as text." },
       });
     } catch (e) {
       props.onFail(e instanceof Error ? e.message : "The map could not start.");
@@ -291,6 +293,7 @@ export default function TransitMap(props: TransitMapProps) {
           "text-size": ["case", ["!=", ["get", "role"], "station"], 13, 11],
           "text-offset": [0, 1.7],
           "text-anchor": "top",
+          "text-max-width": 14,
           "text-optional": true,
         },
         paint: { "text-color": "#0f172a", "text-halo-color": "#ffffff", "text-halo-width": 2 },
@@ -363,7 +366,7 @@ export default function TransitMap(props: TransitMapProps) {
   return (
     <div className="transit-map relative h-full w-full">
       {/* maplibre-gl.css sets .maplibregl-map{position:relative}, so size by height, not inset. */}
-      <div ref={container} className="h-full w-full" aria-hidden="true" />
+      <div ref={container} className="h-full w-full" />
       {!ready ? (
         <div className="absolute inset-0 flex items-center justify-center bg-surface-sunken" role="status" aria-busy="true">
           <span className="text-sm font-semibold text-ink-soft">Loading map…</span>

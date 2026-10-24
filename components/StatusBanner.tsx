@@ -32,7 +32,7 @@ export default function StatusBanner({ status, headline, routeLabel, dataLine, s
     <section
       aria-label={simulated ? `${s.aria}. Simulated scenario.` : s.aria}
       data-status={status}
-      className={`${s.box} verdict-enter relative overflow-hidden rounded-3xl p-6 text-white shadow-hero transition-colors duration-500 sm:p-7`}
+      className={`${s.box} verdict-enter relative overflow-hidden rounded-3xl p-4 text-white shadow-hero transition-colors duration-500 min-[360px]:p-5 sm:p-7`}
     >
       {/* Decorative depth; purely cosmetic. */}
       <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10" />
@@ -45,14 +45,15 @@ export default function StatusBanner({ status, headline, routeLabel, dataLine, s
         </p>
       ) : null}
 
-      <div className="relative flex items-start gap-4 sm:gap-5">
-        <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 sm:h-20 sm:w-20">
-          <Icon className="h-10 w-10 sm:h-12 sm:w-12" strokeWidth={2.25} aria-hidden="true" />
+      <div className="relative flex items-start gap-3 sm:gap-5">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 min-[360px]:h-14 min-[360px]:w-14 sm:h-20 sm:w-20">
+          <Icon className="h-8 w-8 min-[360px]:h-9 min-[360px]:w-9 sm:h-12 sm:w-12" strokeWidth={2.25} aria-hidden="true" />
         </span>
         <div className="min-w-0">
           <p className="text-sm font-semibold uppercase tracking-wider text-white/85">{s.eyebrow}</p>
-          {/* whitespace-nowrap keeps "Not step-free" on one line; the size steps down to fit narrow columns. */}
-          <h2 className="mt-1 whitespace-nowrap text-[2rem] font-extrabold leading-none tracking-tight sm:text-4xl xl:text-[2.75rem]">{s.label}</h2>
+          {/* whitespace-nowrap keeps "Not step-free" on one line (never "step-" / "free"). The size follows the space
+              the label really gets, so "Cannot confirm" (the widest) fits at 320 px and in the 5/12 desktop column. */}
+          <h2 className="mt-1 whitespace-nowrap text-[clamp(1.5rem,7.5vw,2rem)] font-extrabold leading-none tracking-tight sm:text-4xl lg:text-[2rem] xl:text-[2.75rem]">{s.label}</h2>
           {routeLabel ? <p className="mt-2 text-lg font-semibold text-white/95">{routeLabel}</p> : null}
         </div>
       </div>

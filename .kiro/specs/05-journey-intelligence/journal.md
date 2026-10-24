@@ -95,3 +95,21 @@ Found by running the built app in headless Chromium, not by tests or the type ch
   focus is never dropped.
 - **Snapshot writes:** a `next dev` running in the same folder rewrites `mbta-snapshot.json` after live
   fetches. QA servers here ran with `SNAPSHOT_WRITE=0`; the snapshot stays out of commits.
+
+## Stage I: integration branch `all`
+
+- **One Plan B slot.** `planB()` (teammate, on `main`) and the engine alternative are mutually exclusive by
+  construction (`planB()` is null unless the trip is STEP_FREE; `findAlternative` only runs when it is not).
+  `PlanBPanel` picks the one that applies. `backupsFromPlanB()` maps `PlanBElevator.alternative` into the
+  map and the station panel, as planned in Stage H; it never computes a recommendation.
+- **Hypothetical vs current.** The current alternative stays green ("Recommended alternative", "Plan B for
+  right now"); a Plan B backup is blue ("Backup if an elevator fails", "not needed right now"), amber for the
+  elevator at risk instead of red, and has "Show on map" but no "Use" button: nothing is wrong today.
+- **"Not checked yet".** The verdict area now shows the unchecked selection instead of the previous trip's
+  verdict and Plan B. The draft store remembers the trip it was last reset to, so a result arriving before
+  the map resets the draft does not flash "Not checked yet".
+- **Evidence.** The trace gained Plan B and later-today steps. The only new time is a planned outage's start
+  (from the MBTA alert), and the I8 property now covers it. Later-today steps carry no verdict chip.
+- **Found in browser QA:** Puppeteer clicks scroll the target only just into view, under the sticky header,
+  and hit the header link. Real keyboard users had the same risk: `scroll-padding-top` now keeps focused
+  elements clear of the header (WCAG 2.4.11). `/favicon.ico` was a 404: added `app/icon.svg`.

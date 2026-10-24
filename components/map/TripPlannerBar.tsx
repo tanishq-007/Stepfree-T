@@ -82,7 +82,7 @@ const TripPlannerBar = forwardRef<HTMLButtonElement, Props>(function TripPlanner
           </button>
         </div>
       </div>
-      <p id="planner-hint" className={`mt-2 text-xs ${p.dirty && !problem ? "font-semibold text-amber-900" : "text-ink-muted"}`}>
+      <p id="planner-hint" className={`mt-2 text-xs ${p.dirty && !problem ? "font-semibold text-amber-900" : "text-ink-soft"}`}>
         {hint}
       </p>
       <p className="sr-only" aria-live="polite" aria-atomic="true">
@@ -101,8 +101,8 @@ function End({ role, Icon, name }: { role: "Start" | "End"; Icon: typeof MapPin;
         <Icon className="h-4 w-4" aria-hidden="true" />
       </span>
       <span className="min-w-0 leading-tight">
-        <span className="block text-[11px] font-bold uppercase tracking-wide text-ink-muted">{role}</span>
-        <span className={`block truncate text-sm font-bold ${name ? "text-ink" : "font-medium text-ink-muted"}`}>{name ?? "Not chosen"}</span>
+        <span className="block text-[11px] font-bold uppercase tracking-wide text-ink-soft">{role}</span>
+        <span className={`block truncate text-sm font-bold ${name ? "text-ink" : "font-medium text-ink-soft"}`}>{name ?? "Not chosen"}</span>
       </span>
       {name ? null : <ArrowRight className="ml-auto hidden h-4 w-4 text-ink-muted" aria-hidden="true" />}
     </div>

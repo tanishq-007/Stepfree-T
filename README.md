@@ -4,6 +4,8 @@ A mobile-first web app that checks whether an MBTA subway trip can be done **ste
 
 On a step-free day it also shows **Plan B**: which single elevator the trip depends on, and which checked station to use if that elevator breaks. It warns about **planned outages later today** (next 12 hours) that would affect the trip.
 
+Results are a single dashboard: an **interactive MBTA map** (pick a new start and end right on the map), the verdict, one **Plan B** slot, a plain-language **"Understand your journey"** guide, a **"How we decided"** evidence trace, **mobility profiles** compared side by side, and a **disruption simulator** for presenters. See "Journey intelligence" below.
+
 Optionally, with a Google Maps key, it also lists **wheelchair-accessible restrooms near each trip station** and shows a **map and street-level photos of the station's accessible entrances**. These are extras. They never change the step-free result.
 
 Hackathon demo. Subway only (Red, Orange, Blue, Green, Mattapan). No transfers, buses, Commuter Rail, accounts or push notifications.
@@ -142,33 +144,57 @@ Set `GOOGLE_MAPS_API_KEY` in `.env.local`. Nothing about the key is ever sent to
   verdict, never "green because no alert". Line geometry comes from MBTA canonical route patterns and
   is labelled as a reference, not a verified itinerary. A keyboard station list mirrors the map; if the
   map cannot start, a schematic takes its place.
-- **Disruption simulator.** The presenter bar at the top of the trip page switches the three existing
-  scenarios in one click. Everything simulated carries a violet "Simulated scenario" label and the
-  fixed scenario trip is named.
+- **Disruption simulator.** The presenter bar at the top of the trip page switches all six demo
+  scenarios in one click (also `/?demo=<scenario>`). Everything simulated carries a violet "Simulated
+  scenario" label and the fixed scenario trip is named.
+- **Plan a trip on the map.** "Start here" / "Go here" on any station, swap, clear, cancel. Picks only
+  edit a draft: the verdict area shows **"Not checked yet"** (never the previous trip's verdict or Plan B)
+  until the rider presses "Check accessibility", which saves and checks the trip. In the simulator the
+  button reads "Leave simulation and check" and turns the simulation off first.
+- **One Plan B slot, two kinds.** The engine decides which applies and they never appear together:
+  - a problem **right now**: the engine's verified alternative station, compared side by side with the
+    blocked one, with "Show on map" and "Use this station for my trip" (edits the draft; needs a check);
+  - a step-free trip: `planB()` **if an elevator breaks**, "not needed right now": the elevator the trip
+    depends on and its backup station, with "Show on map".
+
+  On the map the current alternative is green ("Recommended alternative") and a Plan B backup is blue
+  ("Backup if an elevator fails"). Both are straight-line suggestions; no route to them is checked.
 - **Understand your journey.** What happened, why it affects this profile, what to do next. Next steps
   are chosen from the data; the AI (if a key is set) may only reword them.
 - **Mobility profiles.** Switch profile on the results page; the engine re-runs and the trip is saved.
   The comparison shows every profile's real verdict and the one rule that differs (uneven platforms).
-- **How we decided.** An ordered decision trace with times only where the data has them.
+- **How we decided.** An ordered decision trace with times only where the data has them. It also lists
+  what Plan B checked and any planned outage later today.
 - **Transfers.** The engine checks only the two endpoint stations. A trip that needs a change of line is
   shown as "Cannot confirm" with the likely transfer station named.
 
 Spec, steering, hooks and the development journal: `.kiro/specs/05-journey-intelligence/`.
 
+Station help sits under the evidence: the accessible entrances and nearby restrooms from "Google features"
+for both trip stations. In the simulator they are marked as real (not simulated) information.
+
 ## Project layout
 
 ```
-app/                 pages (/, /trip/new) and Route Handlers in app/api/*
-components/          StatusBanner, TripForm, AlertCard, AlternativeCard, DataSourceBadge, DemoSwitch,
-                     HeaderNav, Logo, RouteSchematic, StatusSkeleton, PlanBCard, LaterTodayCard, RestroomCard, AccessibleEntranceCard
-lib/types.ts         shared contract (unchanged by Plan B: its types live in lib/engine/plan-b.ts)
-lib/data/            mbta-client, normalize, entrances, platform-map, snapshot, cache, schemas, demo-snapshot, snapshots/
-lib/engine/          evaluate-trip, rules, find-alternative, geo (distance and bearing), plan-b, later-today, constants
-lib/ai/              explain (Anthropic + validation), fallback-templates
+app/                 pages (/, /trip/new), Route Handlers in app/api/*, icon.svg
+components/          StatusBanner, PendingTripCard, PlanBPanel (-> AlternativeCard | PlanBCard), LaterTodayCard,
+                     JourneyExplainer, EvidenceTimeline, ProfileSwitcher, ProfileComparison, PresenterBar, DemoSwitch,
+                     AlertCard, DataSourceBadge, StatusChip, TripForm, RouteSchematic, StatusSkeleton, HeaderNav, Logo,
+                     RestroomCard, AccessibleEntranceCard
+components/map/      JourneyMap (planner + map + legend + list + details), TransitMap (MapLibre), TripPlannerBar,
+                     StationDetail, StationList, MapLegend
+lib/types.ts         shared contract (unchanged by Plan B and journey work: their types live next to their code)
+lib/data/            mbta-client, normalize, entrances, platform-map, network, polyline, snapshot, cache, schemas,
+                     demo-snapshot, snapshots/ (MBTA data and line geometry)
+lib/engine/          evaluate-trip, rules, find-alternative, geo, plan-b, later-today, journey (transfer cap),
+                     profiles, station-map (map markers), trace (evidence), constants
+lib/ai/              explain (Anthropic + validation), guide (grounded next steps), fallback-templates
 lib/google/          Google Places, Street View and Maps Static: key handling, lenient schemas, restrooms, photos, map
-lib/api/             Zod schemas, HTTP helpers, trip-payload (result + Plan B + later today), rate-limit
-lib/client/          browser-only helpers (localStorage, demo store, status hook, format, line colours)
-scripts/             refresh-snapshots.ts, check-gtfs-platforms.ts, a11y-audit.ts
+lib/api/             Zod schemas, HTTP helpers, trip-payload (result + Plan B + later today), journey-payload
+                     (markers, journey cap, profiles), rate-limit
+lib/client/          browser-only helpers (localStorage, demo store, status hook, trip draft, Plan B view adapter,
+                     map geometry, format, line colours)
+scripts/             refresh-snapshots.ts, refresh-network.ts, copy-map-worker.mjs, check-gtfs-platforms.ts, a11y-audit.ts
 tests/               engine (property + example), data, api, components, fixtures (real MBTA responses)
 .kiro/               steering, hooks, specs (EARS requirements, design, tasks)
 ```
@@ -177,7 +203,7 @@ Owners: data = Himani, engine = Tanishq, UI and deploy = Aatmaj, AI and integrat
 
 ## Tests and property names
 
-`npm test` runs 18 files and 251 tests. The property tests use fast-check on generated stations, alerts and platform maps. New properties use the guide's P-numbers. The original a to g names are kept, with the closest P-number:
+`npm test` runs 30 files and 359 tests. The property tests use fast-check on generated stations, alerts and platform maps. New properties use the guide's P-numbers. The original a to g names are kept, with the closest P-number:
 
 | Test | Rule |
 |---|---|
@@ -201,14 +227,23 @@ Owners: data = Himani, engine = Tanishq, UI and deploy = Aatmaj, AI and integrat
 | G3 | `/api/restrooms` never returns a place whose `wheelchairRestroom` is not "yes" |
 | G4 | `/api/entrances` never returns an entrance MBTA does not mark accessible, never more than 3, always in MBTA order |
 | G5 | The map's pin labels and the list's numbers always match in count and order |
+| I1, I2 | The shown verdict is never better than the engine's; a transfer or unknown connection never shows STEP_FREE |
+| I3, I4 | Stale data makes every map marker UNKNOWN; a marker is STEP_FREE only when `evaluateStation` says so |
+| I5 | Simulated responses are always `dataSource: "demo"` and only the demo route imports the simulated snapshot, for all six scenarios and three profiles |
+| I6 | Changing profile never changes the trip's stations |
+| I7, I8 | Every blocking alert is in the evidence trace with its MBTA text; no trace time is invented (including Plan B and later-today steps) |
+| I9 | Every MBTA line chip meets 4.5:1 contrast |
+| V1 | A Plan B station on screen is always the engine's: the current alternative is `TripResult.alternative`, every backup is the `planB()` station of a no-backup elevator, never a trip endpoint |
+| V2 | The current alternative and Plan B backups never appear for the same result |
+| D1 | A map selection can never make start and end the same station, and only "Check accessibility" turns it into a trip |
 
 Coverage tests check that the generators reach every outcome, so no property passes by never running.
 
 ## Status
 
-This branch includes the UI redesign from `main` (commit `71446a3`, design system, lucide icons, two-column dashboard) with Plan B and later today built into it.
+Branch `all` integrates every team branch on top of `main`: the UI redesign, Plan B and later today, Google entrances and restrooms (all already on `main`), and the journey map, disruption simulator, grounded explainer, mobility profiles, evidence trace, map trip planning and visual Plan B (`feature/map-planner-visual-planb`, which contains `feature/accesspath-wow-features`).
 
-Checked on this branch: `npm test` (251 passed), `npm run typecheck` and `npm run build` all pass. `npm run a11y` found no violations on any screen before the Google features were added. It was not re-run after; the new cards were checked separately with axe-core on the real home page (0 violations).
+Checked on `all`: `npm run typecheck`, `npm test` (30 files, 359 tests), `FORCE_OFFLINE=1 npm run build`, an axe-core audit (`npm run a11y`) and a headless-Chrome run of the main flows at 375, 768 and 1440 px against live MBTA data and the offline snapshot.
 
 ### Done
 
@@ -226,7 +261,8 @@ Checked on this branch: `npm test` (251 passed), `npm run typecheck` and `npm ru
 - Demo mode with six labelled simulated scenarios, also reachable as `/?demo=<scenario>`.
 - Mobile UI. The verdict is in an `aria-live` region, and the banner says "According to MBTA data updated at 3:05 PM."
 - Trip saved in `localStorage`. No accounts.
-- API routes: health, stations, alerts, facilities, status, alternatives, explain, demo.
+- API routes: health, stations, alerts, facilities, status, alternatives, explain, demo, network, restrooms, entrances, entrance-map, streetview/image.
+- Interactive journey map with trip planning on the map, a "Not checked yet" state for unchecked picks, and Plan B on the map (current alternative in green, hypothetical backup in blue).
 - GTFS cross-check: all 9 elevator ids in the committed alert snapshot, and all 68 platform-map ids, appear in GTFS `pathways.txt` (MBTA GTFS "Fall 2026, version D"). Findings are in the header of `lib/data/platform-map.ts`. Davis 816 was confirmed as the only elevator to its platform and changed to verified.
 - Automated accessibility audit with axe-core in Chrome: 0 violations on all 8 screens, and no horizontal scrolling at 320 px. The audit found and we fixed three real issues:
   - the data-source badge used `aria-label` on a `<p>`, which screen readers may ignore;

@@ -4,6 +4,8 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { evaluateTrip } from "@/lib/engine/evaluate-trip";
 import { presentableStatus, type RouteRelationship } from "@/lib/engine/journey";
+import { laterToday } from "@/lib/engine/later-today";
+import { planB } from "@/lib/engine/plan-b";
 import { allowedTraceTimes, buildTrace } from "@/lib/engine/trace";
 import { evaluateStation } from "@/lib/engine/rules";
 import { mixedAlertsArb, NOW, NOW_MS, platformMapArb, snapshotArb, tripArb } from "./arbitraries";
@@ -31,6 +33,8 @@ const traceArb = fc
       origin: station(trip.originId),
       destination: station(trip.destinationId),
       checkedAt,
+      planB: planB(trip, snap, NOW, map),
+      laterToday: laterToday(trip, snap, NOW, map),
     };
     return { input, steps: buildTrace(input) };
   });
@@ -75,6 +79,31 @@ describe("buildTrace", () => {
         const cap = steps.find((s) => s.kind === "cap");
         expect(Boolean(cap)).toBe(input.displayed.capped);
         if (cap) expect(cap.status).toBe(input.displayed.status);
+      }),
+    );
+  });
+
+  it("the Plan B step appears exactly when planB() ran, and names only its single points of failure and stations", () => {
+    fc.assert(
+      fc.property(traceArb, ({ input, steps }) => {
+        const step = steps.find((s) => s.kind === "planb");
+        expect(Boolean(step)).toBe(Boolean(input.planB));
+        if (!step || !input.planB) return;
+        expect(step.status).toBeUndefined();
+        expect(step.evidence?.map((e) => e.label)).toEqual(input.planB.elevators.map((e) => e.facilityId));
+        for (const e of input.planB.elevators.filter((x) => x.role === "no_backup")) {
+          expect(step.detail).toContain(e.alternative ? `Backup station: ${e.alternative.name}.` : `${e.name}: no backup. No checked backup station found.`);
+        }
+      }),
+    );
+  });
+
+  it("later-today steps match laterToday() one for one, with its start times and no verdict chip", () => {
+    fc.assert(
+      fc.property(traceArb, ({ input, steps }) => {
+        const later = steps.filter((s) => s.kind === "later");
+        expect(later.map((s) => s.time?.iso)).toEqual((input.laterToday ?? []).map((c) => c.startsAt));
+        for (const s of later) expect(s.status).toBeUndefined();
       }),
     );
   });

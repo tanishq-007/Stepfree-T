@@ -72,7 +72,7 @@ describe("AlternativePanel markup", () => {
     const html = renderToStaticMarkup(createElement(AlternativePanel, { result: demo("elevator-outage-alewife"), interactive: true }));
     expect(html).toContain("Suggested alternative");
     expect(html).toContain("instead of Alewife");
-    expect(html).toContain('aria-label="Show Davis and Alewife on the map"');
+    expect(html).toContain('aria-label="Show on map: Davis and Alewife"');
     expect(html).toContain("Use this station for my trip");
     expect(html).toContain("You will need to check the new trip");
   });

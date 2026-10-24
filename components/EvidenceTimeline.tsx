@@ -2,10 +2,12 @@ import {
   Ban,
   Bell,
   ChevronDown,
+  Clock,
   Cpu,
   Database,
   Gauge,
   Info,
+  LifeBuoy,
   MapPinned,
   Route as RouteIcon,
   Scale,
@@ -29,6 +31,8 @@ const ICON: Record<TraceKind, typeof Ban> = {
   decision: Cpu,
   cap: ShieldAlert,
   alternative: MapPinned,
+  planb: LifeBuoy,
+  later: Clock,
 };
 
 function dotClass(s: TraceStep): string {

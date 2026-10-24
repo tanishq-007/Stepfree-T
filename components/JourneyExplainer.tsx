@@ -104,7 +104,7 @@ function Q({
           <Icon className="h-4 w-4" aria-hidden="true" />
         </span>
         <h3 className="text-sm font-bold text-ink">{title}</h3>
-        {sub ? <span className="ml-auto text-xs font-semibold text-ink-muted">{sub}</span> : null}
+        {sub ? <span className="ml-auto text-xs font-semibold text-ink-soft">{sub}</span> : null}
       </div>
       <div className="mt-2 text-sm leading-relaxed text-ink-soft">{children}</div>
     </div>

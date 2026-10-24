@@ -54,7 +54,7 @@ export default function DemoSwitch() {
           <p className="mt-2 text-xs font-semibold text-violet-900">Demo mode is ON. Results shown are simulated, not live.</p>
         </div>
       ) : presenter ? (
-        <p className="mt-2 text-xs text-ink-muted">The simulator controls are shown at the top of the trip page.</p>
+        <p className="mt-2 text-xs text-ink-soft">The simulator controls are shown at the top of the trip page.</p>
       ) : null}
     </div>
   );

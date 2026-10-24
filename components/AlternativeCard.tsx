@@ -63,7 +63,7 @@ export default function AlternativeCard({ station, instead, view, interactive = 
           </h3>
           <div className="grid gap-2 sm:grid-cols-[1fr,auto,1fr] sm:items-stretch">
             <div className="rounded-xl border border-red-200 bg-status-blocked-tint/60 p-3">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-ink-muted">Your {view.original.role === "origin" ? "start" : "end"}</p>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-ink-soft">Your {view.original.role === "origin" ? "start" : "end"}</p>
               <p className="text-lg font-extrabold text-ink">{view.original.name}</p>
               <StatusChip status={view.original.status} size="xs" />
               {view.original.issue ? <p className="mt-1.5 text-xs leading-snug text-ink-soft">{view.original.issue}</p> : null}
@@ -97,7 +97,7 @@ export default function AlternativeCard({ station, instead, view, interactive = 
               <button
                 type="button"
                 onClick={() => requestMapFocus([view.original.id, view.alternative.id], view.alternative.id, "detail")}
-                aria-label={`Show ${view.alternative.name} and ${view.original.name} on the map`}
+                aria-label={`Show on map: ${view.alternative.name} and ${view.original.name}`}
                 className="btn-secondary min-h-[44px] text-sm"
               >
                 <MapIcon className="h-4 w-4" aria-hidden="true" />
@@ -112,7 +112,7 @@ export default function AlternativeCard({ station, instead, view, interactive = 
                   requestMapFocus([view.alternative.id], null, "check");
                   setUsed(true);
                 }}
-                aria-label={`Use ${view.alternative.name} for my trip instead of ${view.original.name}. You will need to check the new trip.`}
+                aria-label={`Use this station for my trip: ${view.alternative.name} instead of ${view.original.name}. You will need to check the new trip.`}
                 className="btn-primary min-h-[44px] text-sm"
               >
                 <Replace className="h-4 w-4" aria-hidden="true" />

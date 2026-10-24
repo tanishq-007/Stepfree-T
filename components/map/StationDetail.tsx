@@ -178,7 +178,7 @@ export default function StationDetail({
                   Original MBTA notice
                 </summary>
                 <p className="mt-1.5 text-sm text-ink-soft">{alert.header || alert.effect}</p>
-                <p className="mt-1 text-xs text-ink-muted">
+                <p className="mt-1 text-xs text-ink-soft">
                   Alert {alert.id}
                   {alert.facilityIds.length ? ` · facility ${alert.facilityIds.join(", ")}` : ""}
                   {alert.updatedAt && !Number.isNaN(Date.parse(alert.updatedAt)) ? ` · updated ${formatTime(alert.updatedAt)}` : ""}

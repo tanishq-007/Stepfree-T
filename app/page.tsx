@@ -122,6 +122,8 @@ function Result({
       destination: check(destination),
       checkedAt,
       stationName: (id) => byId.get(id)?.name,
+      planB: result.planB ?? null,
+      laterToday: result.laterToday ?? [],
     });
   }, [result, markers, origin, destination, profile, checkedAt]);
 
@@ -169,7 +171,7 @@ function Result({
                     AI explained
                   </span>
                 ) : null}
-                <p className="text-sm text-ink-muted">
+                <p className="text-sm text-ink-soft">
                   Checked {formatTime(checkedAt)} · MBTA data {formatTime(result.fetchedAt)}
                 </p>
                 {refreshing ? (
@@ -180,11 +182,8 @@ function Result({
                 ) : null}
               </div>
 
-              {simulated ? (
-                <p role="note" className="rounded-xl border-2 border-violet-300 bg-violet-50 p-3 text-sm font-semibold text-violet-900">
-                  Simulated demo data for the fixed trip {route ?? "in this scenario"}. This is not what is happening in the subway right now, and your saved trip is not affected.
-                </p>
-              ) : null}
+              {/* Simulated data is labelled in the banner, the badge and the presenter bar (always shown while a
+                  scenario runs), so no extra note here. */}
               {result.dataSource === "snapshot" ? (
                 <p role="note" className="rounded-xl border-2 border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-900">
                   We could not reach the MBTA, so this uses a saved copy from {formatTime(result.fetchedAt)}. It is not live. Press Refresh to try again.
@@ -374,7 +373,7 @@ function Landing() {
               Try the disruption simulator
             </button>
           </div>
-          <p className="text-sm text-ink-muted">The simulator uses clearly labelled simulated data for fixed demo trips. It never touches your saved trip.</p>
+          <p className="text-sm text-ink-soft">The simulator uses clearly labelled simulated data for fixed demo trips. It never touches your saved trip.</p>
         </div>
 
         {/* Decorative route illustration; no station names or statuses are shown. */}
@@ -451,6 +450,8 @@ export default function HomePage() {
   // Demo profile is separate: the scenario trip is fixed and the saved trip must not change.
   const [demoProfile, setDemoProfile] = useState<UserProfile>("wheelchair");
   useEffect(() => {
+    // A map selection left unchecked on another visit is not carried over.
+    dispatchDraft({ type: "reset", originId: null, destinationId: null });
     // Presenter shortcut: /?demo=plan-b-davis turns on that simulated scenario (it is labelled on screen).
     const requested = new URLSearchParams(window.location.search).get("demo");
     const scenario = DEMO_SCENARIOS.find((s) => s === requested);

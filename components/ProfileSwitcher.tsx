@@ -18,13 +18,13 @@ export default function ProfileSwitcher({ value, onChange, disabled }: { value: 
           return (
             <label
               key={p}
-              className={`flex min-h-[44px] cursor-pointer items-center justify-center gap-1.5 rounded-xl px-2 text-sm font-semibold transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-700 ${
+              className={`flex min-h-[44px] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-xl px-1.5 py-1 text-xs font-semibold transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-700 min-[420px]:flex-row min-[420px]:gap-1.5 min-[420px]:px-2 min-[420px]:text-sm ${
                 on ? "bg-white text-brand-900 shadow-card" : "text-ink-soft hover:text-ink"
               }`}
             >
               <input type="radio" name="result-profile" value={p} checked={on} onChange={() => onChange(p)} className="sr-only" />
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="truncate">{PROFILE_LABEL[p]}</span>
+              <span className="max-w-full truncate">{PROFILE_LABEL[p]}</span>
             </label>
           );
         })}

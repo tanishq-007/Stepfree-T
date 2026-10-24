@@ -157,9 +157,9 @@ export default function JourneyMap({
   return (
     <section ref={sectionRef} aria-labelledby="map-h" className="card scroll-mt-20 overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline px-4 py-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <MapIcon className="h-5 w-5 text-brand-700" aria-hidden="true" />
-          <h2 id="map-h" className="text-base font-bold text-ink">
+          <h2 id="map-h" className="whitespace-nowrap text-base font-bold text-ink">
             Journey map
           </h2>
           {simulated ? (

@@ -39,7 +39,7 @@ function SinglePoint({ e, interactive }: { e: PlanBElevator; interactive: boolea
         <button
           type="button"
           onClick={() => requestMapFocus([e.stationId, alt.id], alt.id, "detail")}
-          aria-label={`Show ${alt.name}, the backup for ${e.stationName}, on the map`}
+          aria-label={`Show on map: ${alt.name}, the backup for ${e.stationName}`}
           className="btn-secondary mt-2 min-h-[44px] px-4 text-sm"
         >
           <MapIcon className="h-4 w-4" aria-hidden="true" />
@@ -117,7 +117,10 @@ export default function PlanBCard({ planB, interactive = false, scopeNote }: Pro
         ) : null}
 
         {scopeNote ? <p className="mt-3 rounded-lg bg-surface-sunken px-3 py-2 text-sm text-ink-soft">{scopeNote}</p> : null}
-        <p className="mt-3 text-sm text-ink-soft">We check this by pretending each working elevator breaks, one at a time.</p>
+        <p className="mt-3 text-sm text-ink-soft">
+          We check this by pretending each working elevator breaks, one at a time.
+          {noBackup.some((e) => e.alternative) ? " A backup station is the nearest one on the same line, measured in a straight line. We have not checked how you would get there." : ""}
+        </p>
       </div>
     </section>
   );

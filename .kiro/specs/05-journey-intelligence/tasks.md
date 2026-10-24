@@ -62,3 +62,11 @@ Stages are vertical slices: each one ended with typecheck + tests green.
 - [x] H6 `lib/client/alternative-view.ts` adapter (engine `alternative` only) + comparison card, "Show on map", "Use this station for my trip" (edits the draft, needs a check)
 - [x] H7 Honest "No verified alternative station is available from the current data."
 - [x] H8 Tests: reducer properties, adapter never invents (property over the engine), markup; 44 browser checks
+
+## Stage I: integration (`all` branch)
+- [x] I1 Merge `feature/map-planner-visual-planb` onto `main` (Plan B, later today, Google cards); resolve 13 conflicts
+- [x] I2 `/api/status` and `/api/demo` return trip payload (Plan B, later today) plus journey payload; six scenarios with profile
+- [x] I3 `PlanBPanel`: current alternative or `planB()` backups, never both; backups on the map in blue
+- [x] I4 "Not checked yet" verdict state for unchecked map picks; old Plan B hidden; lower sections labelled
+- [x] I5 Trace steps for Plan B and later today; I8 extended
+- [x] I6 Tests: V1/V2 properties, panel markup, pending rule, demo label consistency; browser QA at 375/768/1440
