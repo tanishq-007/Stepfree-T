@@ -9,7 +9,8 @@ inclusion: always
 - Next.js 15 App Router, TypeScript (strict, no `any`), single repo. Backend = Route Handlers in `app/api/*`.
 - Tailwind CSS 3, Zod for every input and every external payload, Vitest, fast-check.
 - Saved trips live in `localStorage`. No database, no accounts.
-- Deploy target: Vercel. Env vars (all optional): `MBTA_API_KEY`, `ANTHROPIC_API_KEY`. The app must work with no keys.
+- Deploy target: Vercel. Env vars (all optional): `MBTA_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_MAPS_API_KEY`. The app must work with no keys.
+- `GOOGLE_MAPS_API_KEY` is server-only: no `NEXT_PUBLIC_` prefix, never in a URL, JSON body or header sent to the browser. Browser code imports only `lib/google/types.ts`.
 - Test-only flag: `FORCE_OFFLINE=1` skips the live MBTA call.
 
 ## Layout and owners
@@ -19,7 +20,7 @@ inclusion: always
 | Data layer | `lib/data/*`, `scripts/refresh-snapshots.ts`, `tests/data/*`, `tests/fixtures/*` | Himani |
 | Decision engine | `lib/engine/*`, `tests/engine/*` | Tanishq |
 | UI and deploy | `app/*` (pages), `components/*`, `lib/client/*`, Vercel setup | Aatmaj |
-| AI and integration | `lib/ai/*`, `app/api/*`, `lib/api/*`, `tests/api/*` | Pradyannya |
+| AI and integration | `lib/ai/*`, `lib/google/*`, `app/api/*`, `lib/api/*`, `tests/api/*` | Pradyannya |
 
 `lib/types.ts` is the shared contract. Change it only with all four owners agreeing.
 

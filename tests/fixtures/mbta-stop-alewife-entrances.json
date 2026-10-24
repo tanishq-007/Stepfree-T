@@ -1,0 +1,211 @@
+{
+  "data": {
+    "attributes": {
+      "latitude": 42.39583,
+      "location_type": 1,
+      "longitude": -71.141287,
+      "name": "Alewife",
+      "wheelchair_boarding": 1
+    },
+    "id": "place-alfcl",
+    "relationships": {
+      "child_stops": {
+        "data": [
+          {
+            "id": "70061",
+            "type": "stop"
+          },
+          {
+            "id": "door-alfcl-alewife",
+            "type": "stop"
+          },
+          {
+            "id": "door-alfcl-alewifes",
+            "type": "stop"
+          },
+          {
+            "id": "door-alfcl-cambridgepark",
+            "type": "stop"
+          },
+          {
+            "id": "door-alfcl-pathbusway",
+            "type": "stop"
+          },
+          {
+            "id": "door-alfcl-russell",
+            "type": "stop"
+          },
+          {
+            "id": "door-alfcl-steel",
+            "type": "stop"
+          },
+          {
+            "id": "node-814-fourth",
+            "type": "stop"
+          }
+        ]
+      },
+      "parent_station": {
+        "data": null
+      }
+    },
+    "type": "stop"
+  },
+  "included": [
+    {
+      "attributes": {
+        "latitude": 42.395791,
+        "location_type": 3,
+        "longitude": -71.141323,
+        "name": "Alewife",
+        "wheelchair_boarding": 1
+      },
+      "id": "node-814-fourth",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-alfcl",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.395504,
+        "location_type": 2,
+        "longitude": -71.142506,
+        "name": "Steel Place, Alewife Brook Reserve",
+        "wheelchair_boarding": 1
+      },
+      "id": "door-alfcl-steel",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-alfcl",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.39606,
+        "location_type": 2,
+        "longitude": -71.139575,
+        "name": "Russell Field",
+        "wheelchair_boarding": 1
+      },
+      "id": "door-alfcl-russell",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-alfcl",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.396148,
+        "location_type": 0,
+        "longitude": -71.140698,
+        "name": "Alewife",
+        "wheelchair_boarding": 1
+      },
+      "id": "70061",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-alfcl",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.394893,
+        "location_type": 2,
+        "longitude": -71.141516,
+        "name": "Cambridgepark Dr, Alewife Brook Pkwy",
+        "wheelchair_boarding": 1
+      },
+      "id": "door-alfcl-cambridgepark",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-alfcl",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.395862,
+        "location_type": 2,
+        "longitude": -71.140929,
+        "name": "Alewife Path East",
+        "wheelchair_boarding": 1
+      },
+      "id": "door-alfcl-alewife",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-alfcl",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.395643,
+        "location_type": 2,
+        "longitude": -71.141275,
+        "name": "Buses, Alewife Path",
+        "wheelchair_boarding": 1
+      },
+      "id": "door-alfcl-pathbusway",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-alfcl",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.395753,
+        "location_type": 2,
+        "longitude": -71.141256,
+        "name": "Alewife Path South",
+        "wheelchair_boarding": 1
+      },
+      "id": "door-alfcl-alewifes",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-alfcl",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    }
+  ],
+  "jsonapi": {
+    "version": "1.0"
+  }
+}

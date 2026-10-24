@@ -1,0 +1,311 @@
+{
+  "places": [
+    {
+      "id": "ChIJIaN8ewh344kRP0hbcdnlaEs",
+      "location": {
+        "latitude": 42.395759999999996,
+        "longitude": -71.141404
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=5433845672494975039&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Dunkin'",
+        "languageCode": "en"
+      },
+      "currentOpeningHours": {
+        "openNow": true
+      },
+      "accessibilityOptions": {
+        "wheelchairAccessibleParking": true,
+        "wheelchairAccessibleEntrance": true
+      }
+    },
+    {
+      "id": "ChIJGbIk1wd344kR1I_Sb_OWIZs",
+      "location": {
+        "latitude": 42.3957984,
+        "longitude": -71.1414616
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=11178381722407571412&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Alewife",
+        "languageCode": "en"
+      },
+      "accessibilityOptions": {
+        "wheelchairAccessibleParking": true,
+        "wheelchairAccessibleEntrance": true,
+        "wheelchairAccessibleRestroom": true
+      }
+    },
+    {
+      "id": "ChIJ5wHkMQZ344kRURsLJBx_WPs",
+      "location": {
+        "latitude": 42.39562,
+        "longitude": -71.14144
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=18111365660310969169&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Alewife",
+        "languageCode": "en"
+      }
+    },
+    {
+      "id": "ChIJ3eziLgZ344kRUbJTNEpTiiA",
+      "location": {
+        "latitude": 42.39539,
+        "longitude": -71.14133
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=2344778134170350161&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Alewife",
+        "languageCode": "en"
+      }
+    },
+    {
+      "id": "ChIJzyyxLgZ344kR_NSuLVNIX3c",
+      "location": {
+        "latitude": 42.39533,
+        "longitude": -71.14144
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=8601673335386854652&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Alewife",
+        "languageCode": "en"
+      }
+    },
+    {
+      "id": "ChIJUbF8NQZ344kRJe-Ikp-KCzE",
+      "location": {
+        "latitude": 42.396229999999996,
+        "longitude": -71.14174
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=3534070750565166885&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Alewife",
+        "languageCode": "en"
+      }
+    },
+    {
+      "id": "ChIJcUCY0gd344kRjyLdJcXQdFI",
+      "location": {
+        "latitude": 42.39566,
+        "longitude": -71.14198
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=5941603353570910863&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Alewife Station",
+        "languageCode": "en"
+      }
+    },
+    {
+      "id": "ChIJ5zfAKAZ344kRR8Tn-BqmDsA",
+      "location": {
+        "latitude": 42.395199999999996,
+        "longitude": -71.14124
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=13839181339731412039&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Alewife",
+        "languageCode": "en"
+      }
+    },
+    {
+      "id": "ChIJe8z0Jgh344kRKfs9gKDnjqw",
+      "location": {
+        "latitude": 42.3945252,
+        "longitude": -71.1423674
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=12434130297748847401&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "The Little Blue Bakery-Food Truck",
+        "languageCode": "en"
+      },
+      "currentOpeningHours": {
+        "openNow": false
+      }
+    },
+    {
+      "id": "ChIJNfNxGwB344kRQ8-6P98luKw",
+      "location": {
+        "latitude": 42.3948162,
+        "longitude": -71.142984
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=12445739211015507779&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Craft Food Halls - Cambridge",
+        "languageCode": "en"
+      },
+      "currentOpeningHours": {
+        "openNow": true
+      },
+      "accessibilityOptions": {
+        "wheelchairAccessibleEntrance": true,
+        "wheelchairAccessibleRestroom": true,
+        "wheelchairAccessibleSeating": true
+      }
+    },
+    {
+      "id": "ChIJHYrAYwB344kRqms2bU9DNGY",
+      "location": {
+        "latitude": 42.3948635,
+        "longitude": -71.143101
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=7364585299071364010&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Project Street Pizza",
+        "languageCode": "en"
+      },
+      "accessibilityOptions": {
+        "wheelchairAccessibleEntrance": true
+      }
+    },
+    {
+      "id": "ChIJLXQDdAB344kRtoNMDNWbjP8",
+      "location": {
+        "latitude": 42.3948635,
+        "longitude": -71.143101
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=18414264315747795894&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Sousviderie",
+        "languageCode": "en"
+      },
+      "accessibilityOptions": {
+        "wheelchairAccessibleEntrance": true
+      }
+    },
+    {
+      "id": "ChIJew1Vigh344kRs1EnMKw4hEY",
+      "location": {
+        "latitude": 42.394017999999996,
+        "longitude": -71.14170399999999
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=5081248591774175667&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Cambridge",
+        "languageCode": "en"
+      }
+    },
+    {
+      "id": "ChIJVZhsIwZ344kRi4CYzKl7aEE",
+      "location": {
+        "latitude": 42.3937391,
+        "longitude": -71.1411846
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=4713152979255459979&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Summer Shack",
+        "languageCode": "en"
+      },
+      "currentOpeningHours": {
+        "openNow": true
+      },
+      "accessibilityOptions": {
+        "wheelchairAccessibleParking": true,
+        "wheelchairAccessibleEntrance": true,
+        "wheelchairAccessibleRestroom": true
+      }
+    },
+    {
+      "id": "ChIJL2tSVwB344kRRJSQRtr3Iuw",
+      "location": {
+        "latitude": 42.3944945,
+        "longitude": -71.14363809999999
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=17015434859017966660&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Cocomango Speakeasy",
+        "languageCode": "en"
+      }
+    },
+    {
+      "id": "ChIJ2UBETOp344kR-r7nRegjfhg",
+      "location": {
+        "latitude": 42.3945921,
+        "longitude": -71.1440643
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=1764887584488013562&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Top Mix Bar & Kitchen Cambridge",
+        "languageCode": "en"
+      },
+      "currentOpeningHours": {
+        "openNow": true
+      },
+      "accessibilityOptions": {
+        "wheelchairAccessibleEntrance": true,
+        "wheelchairAccessibleRestroom": true,
+        "wheelchairAccessibleSeating": true
+      }
+    },
+    {
+      "id": "ChIJDbZLUA9344kRmgvjqNkKHtU",
+      "location": {
+        "latitude": 42.39396,
+        "longitude": -71.13819
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=15356723709337602970&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Rindge Ave @ Russell Field",
+        "languageCode": "en"
+      }
+    },
+    {
+      "id": "ChIJkazOARd344kRqqTDJ4a99oo",
+      "location": {
+        "latitude": 42.395193400000004,
+        "longitude": -71.1457417
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=10013399205395276970&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Mothership Event Space",
+        "languageCode": "en"
+      },
+      "accessibilityOptions": {
+        "wheelchairAccessibleParking": true,
+        "wheelchairAccessibleEntrance": true,
+        "wheelchairAccessibleRestroom": true,
+        "wheelchairAccessibleSeating": true
+      }
+    },
+    {
+      "id": "ChIJHV-rzk1344kRNirPTH72B6U",
+      "location": {
+        "latitude": 42.3950478,
+        "longitude": -71.14585319999999
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=11891744363410041398&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Revival Cafe+Kitchen",
+        "languageCode": "en"
+      },
+      "currentOpeningHours": {
+        "openNow": false
+      },
+      "accessibilityOptions": {
+        "wheelchairAccessibleParking": true,
+        "wheelchairAccessibleEntrance": true,
+        "wheelchairAccessibleRestroom": true,
+        "wheelchairAccessibleSeating": true
+      }
+    },
+    {
+      "id": "ChIJX6D3Zw9344kRfX25PKCMzHE",
+      "location": {
+        "latitude": 42.3936572,
+        "longitude": -71.137478
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=8200083641376275837&g_mp=Cilnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaE5lYXJieRACGAQgAA",
+      "displayName": {
+        "text": "Ferro's Foodtown",
+        "languageCode": "en"
+      },
+      "currentOpeningHours": {
+        "openNow": true
+      },
+      "accessibilityOptions": {
+        "wheelchairAccessibleParking": true,
+        "wheelchairAccessibleEntrance": true
+      }
+    }
+  ]
+}

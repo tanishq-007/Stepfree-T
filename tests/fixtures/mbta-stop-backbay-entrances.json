@@ -1,0 +1,257 @@
+{
+  "data": {
+    "attributes": {
+      "latitude": 42.34735,
+      "location_type": 1,
+      "longitude": -71.075727,
+      "name": "Back Bay",
+      "wheelchair_boarding": 1
+    },
+    "id": "place-bbsta",
+    "relationships": {
+      "child_stops": {
+        "data": [
+          {
+            "id": "door-bbsta-buswayn",
+            "type": "stop"
+          },
+          {
+            "id": "door-bbsta-busways",
+            "type": "stop"
+          },
+          {
+            "id": "door-bbsta-clarcolum",
+            "type": "stop"
+          },
+          {
+            "id": "door-bbsta-clarendon1",
+            "type": "stop"
+          },
+          {
+            "id": "door-bbsta-clarendon2",
+            "type": "stop"
+          },
+          {
+            "id": "door-bbsta-dartmn",
+            "type": "stop"
+          },
+          {
+            "id": "door-bbsta-dartms",
+            "type": "stop"
+          },
+          {
+            "id": "door-bbsta-dartmw",
+            "type": "stop"
+          },
+          {
+            "id": "door-bbsta-garage",
+            "type": "stop"
+          },
+          {
+            "id": "door-bbsta-underpass",
+            "type": "stop"
+          }
+        ]
+      },
+      "parent_station": {
+        "data": null
+      }
+    },
+    "type": "stop"
+  },
+  "included": [
+    {
+      "attributes": {
+        "latitude": 42.347348,
+        "location_type": 2,
+        "longitude": -71.075791,
+        "name": "Dartmouth St (South)",
+        "wheelchair_boarding": 1
+      },
+      "id": "door-bbsta-dartms",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-bbsta",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.347552,
+        "location_type": 2,
+        "longitude": -71.072937,
+        "name": "Clarendon St (Tracks 1 and 3)",
+        "wheelchair_boarding": 2
+      },
+      "id": "door-bbsta-clarendon1",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-bbsta",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.347584,
+        "location_type": 2,
+        "longitude": -71.0759,
+        "name": "Dartmouth St (North)",
+        "wheelchair_boarding": 1
+      },
+      "id": "door-bbsta-dartmn",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-bbsta",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.347572,
+        "location_type": 2,
+        "longitude": -71.076228,
+        "name": "Dartmouth St (Tracks 5 and 7)",
+        "wheelchair_boarding": 2
+      },
+      "id": "door-bbsta-dartmw",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-bbsta",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.34754,
+        "location_type": 2,
+        "longitude": -71.07341,
+        "name": "Clarendon St, Columbus Ave",
+        "wheelchair_boarding": 2
+      },
+      "id": "door-bbsta-clarcolum",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-bbsta",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.347684,
+        "location_type": 2,
+        "longitude": -71.075054,
+        "name": "Garage",
+        "wheelchair_boarding": 1
+      },
+      "id": "door-bbsta-garage",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-bbsta",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.347654,
+        "location_type": 2,
+        "longitude": -71.074699,
+        "name": "Clarendon St, Buses (North)",
+        "wheelchair_boarding": 1
+      },
+      "id": "door-bbsta-buswayn",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-bbsta",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.347445,
+        "location_type": 2,
+        "longitude": -71.07467,
+        "name": "Clarendon St, Buses (South)",
+        "wheelchair_boarding": 1
+      },
+      "id": "door-bbsta-busways",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-bbsta",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.347471,
+        "location_type": 2,
+        "longitude": -71.07305,
+        "name": "Clarendon St (Track 2)",
+        "wheelchair_boarding": 2
+      },
+      "id": "door-bbsta-clarendon2",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-bbsta",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    },
+    {
+      "attributes": {
+        "latitude": 42.347273,
+        "location_type": 2,
+        "longitude": -71.076565,
+        "name": "Underpass to Copley Place",
+        "wheelchair_boarding": 2
+      },
+      "id": "door-bbsta-underpass",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-bbsta",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    }
+  ],
+  "jsonapi": {
+    "version": "1.0"
+  }
+}

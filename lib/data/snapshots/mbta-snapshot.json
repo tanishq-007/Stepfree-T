@@ -4548,26 +4548,106 @@
    "updatedAt": "2026-10-24T07:48:01-04:00"
   },
   {
-   "id": "1040949",
+   "id": "1040976",
    "effect": "ELEVATOR_CLOSURE",
-   "header": "State Elevator 967 (Oak Grove platform to Forest Hills, Wonderland platforms) is unavailable due to maintenance.",
-   "description": "Please use nearby State Street Elevator 802. ",
+   "header": "Haymarket Elevator 907 (Underpass to Oak Grove platform) is unavailable due to maintenance.",
+   "description": "To board or exit, use Haymarket Elevator 903 to travel between the Oak Grove platform and the Congress St lobby. To transfer to the Green Line, take Haymarket Elevator 903 to the Congress St lobby, then use Haymarket Elevator 904 to access the Forest Hills platform. At the Forest Hills platform, proceed to the end of platform and take Haymarket Elevator 905 to the Orange Line underpass, then proceed to the end of the hallway and use Haymarket Elevator 906 to access the Green Line platform.",
    "stationIds": [
-    "place-state"
+    "place-haecl"
    ],
    "facilityIds": [
-    "967"
+    "907"
    ],
    "activePeriod": [
     {
-     "start": "2026-10-24T10:32:01-04:00",
+     "start": "2026-10-24T13:19:01-04:00",
      "end": null
     }
    ],
    "severity": 3,
-   "updatedAt": "2026-10-24T10:32:01-04:00"
+   "updatedAt": "2026-10-24T13:19:01-04:00"
+  },
+  {
+   "id": "1040997",
+   "effect": "ESCALATOR_CLOSURE",
+   "header": "Sullivan Square Escalator 308 (Oak Grove platform to paid lobby) is unavailable due to maintenance.",
+   "description": "",
+   "stationIds": [
+    "place-sull"
+   ],
+   "facilityIds": [
+    "308"
+   ],
+   "activePeriod": [
+    {
+     "start": "2026-10-24T14:47:01-04:00",
+     "end": null
+    }
+   ],
+   "severity": 3,
+   "updatedAt": "2026-10-24T14:47:01-04:00"
+  },
+  {
+   "id": "1041023",
+   "effect": "ESCALATOR_CLOSURE",
+   "header": "Copley Escalator 439 (Kenmore & West, Heath Street lobby to street) is unavailable due to maintenance.",
+   "description": "",
+   "stationIds": [
+    "place-coecl"
+   ],
+   "facilityIds": [
+    "439"
+   ],
+   "activePeriod": [
+    {
+     "start": "2026-10-24T17:17:01-04:00",
+     "end": null
+    }
+   ],
+   "severity": 3,
+   "updatedAt": "2026-10-24T17:17:02-04:00"
+  },
+  {
+   "id": "1041024",
+   "effect": "ESCALATOR_CLOSURE",
+   "header": "Fields Corner Escalator 427 (Paid lobby to Alewife platform) is unavailable due to maintenance.",
+   "description": "",
+   "stationIds": [
+    "place-fldcr"
+   ],
+   "facilityIds": [
+    "427"
+   ],
+   "activePeriod": [
+    {
+     "start": "2026-10-24T17:19:25-04:00",
+     "end": null
+    }
+   ],
+   "severity": 3,
+   "updatedAt": "2026-10-24T17:19:25-04:00"
+  },
+  {
+   "id": "1041027",
+   "effect": "ELEVATOR_CLOSURE",
+   "header": "South Station Elevator 926 (Subway Lobby to Atlantic Avenue, Summer Street) is unavailable due to maintenance.",
+   "description": "To exit, South Station Elevator 949 located on the opposite side of the lobby. Alternatively, travel up the ramp towards the Commuter Rail Concourse, and at the base of the escalator, turn left and proceed down the hallway. At the end of the hallway, use South Station Elevator 6476 to access the Commuter Rail Concourse. To board, cross Atlantic Ave towards Dewey Sq and use South Station Elevator 949.",
+   "stationIds": [
+    "place-sstat"
+   ],
+   "facilityIds": [
+    "926"
+   ],
+   "activePeriod": [
+    {
+     "start": "2026-10-24T17:35:01-04:00",
+     "end": null
+    }
+   ],
+   "severity": 3,
+   "updatedAt": "2026-10-24T17:35:01-04:00"
   }
  ],
- "fetchedAt": "2026-10-24T17:15:34.006Z",
+ "fetchedAt": "2026-10-24T21:35:55.725Z",
  "source": "live"
 }

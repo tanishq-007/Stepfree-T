@@ -1,0 +1,24 @@
+{
+  "data": {
+    "attributes": {
+      "latitude": 42.395504,
+      "location_type": 2,
+      "longitude": -71.142506,
+      "name": "Steel Place, Alewife Brook Reserve",
+      "wheelchair_boarding": 1
+    },
+    "id": "door-alfcl-steel",
+    "relationships": {
+      "parent_station": {
+        "data": {
+          "id": "place-alfcl",
+          "type": "stop"
+        }
+      }
+    },
+    "type": "stop"
+  },
+  "jsonapi": {
+    "version": "1.0"
+  }
+}

@@ -3,9 +3,11 @@ import type { DataSnapshot } from "@/lib/types";
 import {
   RawAlertsResponseSchema,
   RawFacilitiesResponseSchema,
+  RawStopWithChildrenSchema,
   RawStopsResponseSchema,
   type RawAlertsResponse,
   type RawFacilitiesResponse,
+  type RawStopWithChildren,
   type RawStopsResponse,
 } from "./schemas";
 import { buildSnapshot, type LineStops } from "./normalize";
@@ -109,6 +111,30 @@ export function fetchStationsForLine(routes: string): Promise<RawStopsResponse> 
 
 export function fetchPlatforms(): Promise<RawStopsResponse> {
   return getAllPages("/stops", { "filter[route_type]": "0,1", include: "parent_station" }, RawStopsResponseSchema);
+}
+
+/**
+ * One station with its child stops. Entrances are the children with location_type 2.
+ * (A list query with `filter[location_type]=2` returns nothing, so we ask for the one station instead.)
+ */
+export function fetchStationEntrances(stationId: string): Promise<RawStopWithChildren> {
+  return get(
+    `/stops/${encodeURIComponent(stationId)}`,
+    {
+      include: "child_stops",
+      "fields[stop]": "name,latitude,longitude,location_type,wheelchair_boarding",
+    },
+    RawStopWithChildrenSchema,
+  );
+}
+
+/** One stop by id (used to check an entrance id the browser sent us). */
+export function fetchStop(stopId: string): Promise<RawStopWithChildren> {
+  return get(
+    `/stops/${encodeURIComponent(stopId)}`,
+    { "fields[stop]": "name,latitude,longitude,location_type,wheelchair_boarding" },
+    RawStopWithChildrenSchema,
+  );
 }
 
 export function fetchFacilities(): Promise<RawFacilitiesResponse> {

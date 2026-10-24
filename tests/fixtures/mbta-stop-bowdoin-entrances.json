@@ -1,0 +1,50 @@
+{
+  "data": {
+    "attributes": {
+      "latitude": 42.361365,
+      "location_type": 1,
+      "longitude": -71.062037,
+      "name": "Bowdoin",
+      "wheelchair_boarding": 2
+    },
+    "id": "place-bomnl",
+    "relationships": {
+      "child_stops": {
+        "data": [
+          {
+            "id": "door-bomnl-main",
+            "type": "stop"
+          }
+        ]
+      },
+      "parent_station": {
+        "data": null
+      }
+    },
+    "type": "stop"
+  },
+  "included": [
+    {
+      "attributes": {
+        "latitude": 42.36135,
+        "location_type": 2,
+        "longitude": -71.061971,
+        "name": "Cambridge St",
+        "wheelchair_boarding": 2
+      },
+      "id": "door-bomnl-main",
+      "relationships": {
+        "parent_station": {
+          "data": {
+            "id": "place-bomnl",
+            "type": "stop"
+          }
+        }
+      },
+      "type": "stop"
+    }
+  ],
+  "jsonapi": {
+    "version": "1.0"
+  }
+}

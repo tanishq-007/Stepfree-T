@@ -42,6 +42,11 @@ export async function cached<T>(
   return promise;
 }
 
+/** Stores a value we already have, so a later `cached(key, ...)` call finds it instead of loading it again. */
+export function primeCache<T>(key: string, ttlMs: number, value: T, nowMs: () => number = Date.now): void {
+  store.set(key, { value, expiresAt: nowMs() + ttlMs });
+}
+
 export function clearCache(): void {
   store.clear();
   inflight.clear();

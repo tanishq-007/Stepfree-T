@@ -4,6 +4,8 @@ A mobile-first web app that checks whether an MBTA subway trip can be done **ste
 
 On a step-free day it also shows **Plan B**: which single elevator the trip depends on, and which checked station to use if that elevator breaks. It warns about **planned outages later today** (next 12 hours) that would affect the trip.
 
+Optionally, with a Google Maps key, it also lists **wheelchair-accessible restrooms near each trip station** and shows a **map and street-level photos of the station's accessible entrances**. These are extras. They never change the step-free result.
+
 Hackathon demo. Subway only (Red, Orange, Blue, Green, Mattapan). No transfers, buses, Commuter Rail, accounts or push notifications.
 
 ## Run it
@@ -32,6 +34,7 @@ Other scripts:
 | `ANTHROPIC_API_KEY` | optional | Turns on AI rewriting in `/api/explain`. Without it, built-in plain-language templates are used. |
 | `ANTHROPIC_MODEL` | optional | Model for `/api/explain` (default `claude-haiku-4-5`). |
 | `EXPLAIN_AI_LIMIT_PER_MINUTE` | optional | AI rewrites per client per minute (default 10). Over the limit, riders get the templates (header `x-ai-rate-limited: 1`). Counted per server instance. |
+| `GOOGLE_MAPS_API_KEY` | optional | **Server-only.** Turns on restrooms, entrance photos and the entrance map (see "Google features"). Enable "Places API (New)", "Street View Static API" and "Maps Static API" for the key. Without it, those three are hidden and nothing else changes. Never give it a `NEXT_PUBLIC_` prefix. |
 | `FORCE_OFFLINE` | testing | `1` skips the live MBTA call and uses the committed snapshot. |
 | `SNAPSHOT_WRITE` | optional | `0` stops the dev server from rewriting the snapshot file after each live fetch. |
 
@@ -48,6 +51,11 @@ curl "$B/api/facilities?stationId=place-alfcl"
 curl "$B/api/status?origin=place-alfcl&destination=place-pktrm&profile=wheelchair"
 curl "$B/api/alternatives?stationId=place-alfcl&profile=wheelchair"
 curl "$B/api/demo?scenario=elevator-outage-alewife"      # see the demo scenarios below
+curl "$B/api/restrooms?stationId=place-alfcl&radius=400"   # needs GOOGLE_MAPS_API_KEY
+curl "$B/api/entrances?stationId=place-alfcl"             # names and links work without a key; photos need it
+# pictures: open these in a browser (key needed)
+#   $B/api/entrance-map?stationId=place-alfcl
+#   $B/api/streetview/image?entranceId=door-alfcl-alewife   (use an id from /api/entrances)
 curl -X POST $B/api/explain -H 'content-type: application/json' \
   -d '{"profile":"wheelchair","tripResult":{ ...a /api/status result... }}'
 ```
@@ -100,16 +108,43 @@ Demo mode (switch in the footer, `/?demo=<scenario>`, or `/api/demo`) uses a **s
 
 For a real Plan B case, try Davis to Kendall/MIT with live data: Davis Elevator 816 is the only elevator to the Davis platform.
 
+## Google features (optional)
+
+Set `GOOGLE_MAPS_API_KEY` in `.env.local`. Nothing about the key is ever sent to the browser: the server calls Google, and the browser only receives our own JSON or picture bytes.
+
+**Accessible restrooms nearby.** `GET /api/restrooms?stationId=&radius=` (radius 1 to 800 meters, default 400). The server asks Google Places API (New) for libraries, cafes, restaurants, shopping malls and transit stations within 800 m of the station, keeps only places where Google says `wheelchairAccessibleRestroom` is `true`, sorts them by straight-line distance and returns up to 5. Missing information is always "unknown", never "yes". Results are cached in memory for one hour per station. Each trip station gets a collapsed card on the home page.
+
+**Accessible entrances.** `GET /api/entrances?stationId=` lists up to 3 entrances, in MBTA's own order, and **only entrances MBTA marks wheelchair accessible** (`wheelchair_boarding` = 1 in MBTA's data, with coordinates). If MBTA marks none, the answer is `entrances: []` and the card says "We couldn't find an entrance marked wheelchair accessible for this station." There is no photo and no map in that case, and a generic station photo is never shown as an entrance. With a key, each entrance gets a Street View photo (`/api/streetview/image?entranceId=`), and the station gets one map (`/api/entrance-map?stationId=`) with pins numbered like the list and an S for the station. The image route only serves ids that MBTA says are accessible entrances.
+
+**Without a key**, the restroom card, the photos and the map are hidden. The entrance card still shows the heading, the numbered entrance names, and an "Open in Google Maps" link for each (those need no key).
+
+### Limits and things that do not work well
+
+- **The entrance map is not verified against the real Google API.** The Maps Static API was not enabled for the project key (Google answered 403 "This API is not activated"). The map route is tested with mocked answers only. Enable "Maps Static API" in Google Cloud and open `/api/entrance-map?stationId=place-alfcl` to check it. Until then the card hides the map when it fails to load, and the names, photos and links still work.
+- **The photo often does not show the entrance.** Street View gives the nearest photo to the entrance point and we aim the camera at it. In real answers the nearest photo was sometimes inside the station (ticket machines, a concrete wall) or blocked by a bus. The card says "A nearby building or vehicle may block the view." Many photos are from third parties (the card names them) and some are from 2015 to 2022.
+- **Not every station has accessible entrances in MBTA's data.** 36 of 125 subway stations have no entrance records at all, and some stations have entrances that are all marked not accessible (for example Bowdoin). They get the "couldn't find" message. This does not mean the station has no step-free way in: use the step-free result above it.
+- **MBTA's order, not the nearest.** The first three accessible entrances in MBTA's list are shown. A closer one may exist.
+- **Google restroom data may be incomplete.** Many places have no accessibility information (10 of the 20 nearest places at Alewife had none). We only list places Google positively says have an accessible restroom. Some restrooms are for customers only.
+- **"Open now" can be up to an hour old** (results are cached for an hour). The card shows when Google was asked.
+- **Walking times are rough.** They use straight-line distance at 60 meters a minute.
+- **Only the 20 nearest places are searched**, so in a very busy area a restroom further out can be missed.
+- **The Google routes have no rate limit.** Station and entrance ids are checked against MBTA data (so the key cannot be used to look up other places), results are cached, and browsers cache pictures for an hour, but a script could still request many pictures. Before a public deploy, set a quota cap and a budget alert for the key in Google Cloud and restrict it to the three APIs above.
+- **Cost.** Google bills a Places request at the highest tier of any field asked for. "Open now" (`currentOpeningHours`) is a higher tier than the other fields, so it makes every restroom search cost more. Removing `places.currentOpeningHours.openNow` from `RESTROOM_FIELD_MASK` in `lib/google/restrooms.ts` lowers the price and drops the open / closed line. Street View metadata is free; each picture counts against quota. Prices are not stated here because they change.
+- **More MBTA calls.** The entrance list uses one MBTA call per station (cached an hour), and it also runs when `FORCE_OFFLINE=1`. Without `MBTA_API_KEY` (20 requests a minute) a busy minute can hit the MBTA limit.
+- The entrance card shows "Looking for accessible entrances" while loading, and the restroom card shows nothing while loading, so the page can grow when they arrive. Both show a short error with Try again if something fails.
+- Checked in a real Chrome with axe-core: 0 violations with the cards open, tap targets at least 44 px, no sideways scrolling at 320 px. Not tested with VoiceOver or TalkBack.
+
 ## Project layout
 
 ```
 app/                 pages (/, /trip/new) and Route Handlers in app/api/*
 components/          StatusBanner, TripForm, AlertCard, AlternativeCard, DataSourceBadge, DemoSwitch,
-                     HeaderNav, Logo, RouteSchematic, StatusSkeleton, PlanBCard, LaterTodayCard
+                     HeaderNav, Logo, RouteSchematic, StatusSkeleton, PlanBCard, LaterTodayCard, RestroomCard, AccessibleEntranceCard
 lib/types.ts         shared contract (unchanged by Plan B: its types live in lib/engine/plan-b.ts)
-lib/data/            mbta-client, normalize, platform-map, snapshot, cache, schemas, demo-snapshot, snapshots/
-lib/engine/          evaluate-trip, rules, find-alternative, geo, plan-b, later-today, constants
+lib/data/            mbta-client, normalize, entrances, platform-map, snapshot, cache, schemas, demo-snapshot, snapshots/
+lib/engine/          evaluate-trip, rules, find-alternative, geo (distance and bearing), plan-b, later-today, constants
 lib/ai/              explain (Anthropic + validation), fallback-templates
+lib/google/          Google Places, Street View and Maps Static: key handling, lenient schemas, restrooms, photos, map
 lib/api/             Zod schemas, HTTP helpers, trip-payload (result + Plan B + later today), rate-limit
 lib/client/          browser-only helpers (localStorage, demo store, status hook, format, line colours)
 scripts/             refresh-snapshots.ts, check-gtfs-platforms.ts, a11y-audit.ts
@@ -121,7 +156,7 @@ Owners: data = Himani, engine = Tanishq, UI and deploy = Aatmaj, AI and integrat
 
 ## Tests and property names
 
-`npm test` runs 13 files and 126 tests. The property tests use fast-check on generated stations, alerts and platform maps. New properties use the guide's P-numbers. The original a to g names are kept, with the closest P-number:
+`npm test` runs 18 files and 251 tests. The property tests use fast-check on generated stations, alerts and platform maps. New properties use the guide's P-numbers. The original a to g names are kept, with the closest P-number:
 
 | Test | Rule |
 |---|---|
@@ -140,6 +175,11 @@ Owners: data = Himani, engine = Tanishq, UI and deploy = Aatmaj, AI and integrat
 | P13 | Every Plan B station is STEP_FREE with that elevator removed, shares a line, and is not an endpoint |
 | P14 | Outages that start after now never change the "now" result; later-today warnings are exact |
 | P16a, b, c | Conflicting sources (unknown elevator id, elevator missing from the map, unknown MBTA flag) are never STEP_FREE |
+| G1 | The Google accessibility mapping never turns a missing or undefined field into "yes" |
+| G2 | The compass bearing is always in [0, 360), and the bearing to a point's exact eastward neighbour is about 90 |
+| G3 | `/api/restrooms` never returns a place whose `wheelchairRestroom` is not "yes" |
+| G4 | `/api/entrances` never returns an entrance MBTA does not mark accessible, never more than 3, always in MBTA order |
+| G5 | The map's pin labels and the list's numbers always match in count and order |
 
 Coverage tests check that the generators reach every outcome, so no property passes by never running.
 
@@ -147,7 +187,7 @@ Coverage tests check that the generators reach every outcome, so no property pas
 
 This branch includes the UI redesign from `main` (commit `71446a3`, design system, lucide icons, two-column dashboard) with Plan B and later today built into it.
 
-Checked on this branch: `npm test` (124 passed), `npm run typecheck` and `npm run build` all pass. `npm run a11y` finds no violations on any screen.
+Checked on this branch: `npm test` (251 passed), `npm run typecheck` and `npm run build` all pass. `npm run a11y` found no violations on any screen before the Google features were added. It was not re-run after; the new cards were checked separately with axe-core on the real home page (0 violations).
 
 ### Done
 
@@ -173,7 +213,8 @@ Checked on this branch: `npm test` (124 passed), `npm run typecheck` and `npm ru
   - after the redesign, the header nav pushed the page 7 px sideways at 320 px wide; it now wraps.
 
   axe still asks for a human check of text on the gradient header, because it cannot measure contrast on gradients.
-- Kiro: 4 specs, 4 steering files, 2 hooks. The engine spec and product rules now include Plan B and later today.
+- Google restrooms and accessible entrances (spec 05): tested with mocked Google and MBTA answers built from saved real responses (`tests/fixtures`), and checked with live calls and a real key, except the entrance map (see Google features). No test sends a real request.
+- Kiro: 5 specs, 4 steering files, 2 hooks. The engine spec and product rules now include Plan B and later today.
 
 ### To do
 

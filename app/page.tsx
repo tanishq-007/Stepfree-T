@@ -12,11 +12,13 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { Alert, Trip } from "@/lib/types";
+import AccessibleEntranceCard from "@/components/AccessibleEntranceCard";
 import AlertCard from "@/components/AlertCard";
 import AlternativeCard from "@/components/AlternativeCard";
 import DataSourceBadge from "@/components/DataSourceBadge";
 import LaterTodayCard from "@/components/LaterTodayCard";
 import PlanBCard from "@/components/PlanBCard";
+import RestroomCard from "@/components/RestroomCard";
 import StatusBanner from "@/components/StatusBanner";
 import RouteSchematic from "@/components/RouteSchematic";
 import StatusSkeleton from "@/components/StatusSkeleton";
@@ -82,6 +84,10 @@ function Result({
       r.code !== "ELEVATOR_ALTERNATIVE_AVAILABLE",
   );
   const usedAI = explanation?.usedAI === true;
+  // The two trip stations, once each. The Google cards below hide themselves when there is no Google key.
+  const tripStations = [result.trip.origin, result.trip.destination].filter(
+    (s, i, all): s is NonNullable<typeof s> => s !== null && all.findIndex((o) => o?.id === s.id) === i,
+  );
 
   return (
     <div className="grid gap-5 lg:grid-cols-5 lg:items-start">
@@ -176,9 +182,14 @@ function Result({
             </ul>
           </section>
         ) : null}
+
+        {/* Extra help from Google. It never changes the step-free result above. */}
+        {tripStations.map((s) => (
+          <RestroomCard key={s.id} station={s} />
+        ))}
       </div>
 
-      {/* Secondary column: route, alternative, Plan B, reasoning, refresh. */}
+      {/* Secondary column: route, alternative, Plan B, reasoning, accessible entrances, refresh. */}
       <aside className="space-y-5 lg:col-span-2">
         <RouteSchematic
           origin={result.trip.origin}
@@ -205,6 +216,10 @@ function Result({
             </ul>
           </section>
         ) : null}
+
+        {tripStations.map((s) => (
+          <AccessibleEntranceCard key={s.id} station={s} />
+        ))}
 
         <button type="button" onClick={onRefresh} className="btn-primary w-full">
           <RefreshCw className="h-5 w-5" aria-hidden="true" />

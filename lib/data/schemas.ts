@@ -5,6 +5,7 @@ import { z } from "zod";
 
 const resourceId = z.object({ id: z.string(), type: z.string() }).passthrough();
 const relationship = z.object({ data: resourceId.nullable().optional() }).passthrough();
+const relationshipList = z.object({ data: z.array(resourceId).optional() }).passthrough();
 
 export const RawStopSchema = z
   .object({
@@ -21,7 +22,10 @@ export const RawStopSchema = z
         description: z.string().nullable().optional(),
       })
       .passthrough(),
-    relationships: z.object({ parent_station: relationship.optional() }).passthrough().optional(),
+    relationships: z
+      .object({ parent_station: relationship.optional(), child_stops: relationshipList.optional() })
+      .passthrough()
+      .optional(),
   })
   .passthrough();
 
@@ -29,6 +33,11 @@ const links = z.object({ next: z.string().optional() }).passthrough().optional()
 
 export const RawStopsResponseSchema = z
   .object({ data: z.array(RawStopSchema), included: z.array(RawStopSchema).optional(), links })
+  .passthrough();
+
+/** `GET /stops/{id}?include=child_stops`: one stop in `data`, its children in `included`. */
+export const RawStopWithChildrenSchema = z
+  .object({ data: RawStopSchema, included: z.array(RawStopSchema).optional() })
   .passthrough();
 
 export const RawFacilitySchema = z
@@ -89,6 +98,7 @@ export const RawAlertsResponseSchema = z
   .object({ data: z.array(RawAlertSchema), links })
   .passthrough();
 
+export type RawStopWithChildren = z.infer<typeof RawStopWithChildrenSchema>;
 export type RawStop = z.infer<typeof RawStopSchema>;
 export type RawStopsResponse = z.infer<typeof RawStopsResponseSchema>;
 export type RawFacility = z.infer<typeof RawFacilitySchema>;
