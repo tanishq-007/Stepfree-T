@@ -3,8 +3,10 @@ import type { AccessStatus } from "@/lib/types";
 
 interface Props {
   status: AccessStatus;
-  headline?: string;
-  routeLabel?: string;
+  headline?: string | undefined;
+  routeLabel?: string | undefined;
+  /** Where the answer comes from, e.g. "According to MBTA data updated at 3:05 PM." Read out with the verdict. */
+  dataLine?: string | undefined;
 }
 
 /**
@@ -40,7 +42,7 @@ const STYLES: Record<
   },
 };
 
-export default function StatusBanner({ status, headline, routeLabel }: Props) {
+export default function StatusBanner({ status, headline, routeLabel, dataLine }: Props) {
   const s = STYLES[status];
   const Icon = s.Icon;
   return (
@@ -73,6 +75,10 @@ export default function StatusBanner({ status, headline, routeLabel }: Props) {
           ) : null}
         </div>
       </div>
+
+      {dataLine ? (
+        <p className="relative mt-4 text-base font-semibold text-white/95">{dataLine}</p>
+      ) : null}
 
       {headline ? (
         <p className="relative mt-5 max-w-prose text-lg leading-snug text-white/95">{headline}</p>

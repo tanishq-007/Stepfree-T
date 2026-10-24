@@ -1,6 +1,6 @@
 import { StatusQuerySchema } from "@/lib/api/schemas";
 import { loadSnapshot, parseQuery } from "@/lib/api/http";
-import { evaluateTrip } from "@/lib/engine/evaluate-trip";
+import { buildTripPayload } from "@/lib/api/trip-payload";
 
 export const dynamic = "force-dynamic";
 
@@ -11,15 +11,6 @@ export async function GET(request: Request): Promise<Response> {
 
   const outcome = await loadSnapshot();
   if (!outcome.ok) return outcome.response;
-  const { snapshot } = outcome;
 
-  const result = evaluateTrip({ originId: origin, destinationId: destination, profile }, snapshot, new Date());
-  return Response.json({
-    ...result,
-    trip: {
-      profile,
-      origin: snapshot.stations.find((s) => s.id === origin) ?? null,
-      destination: snapshot.stations.find((s) => s.id === destination) ?? null,
-    },
-  });
+  return Response.json(buildTripPayload({ originId: origin, destinationId: destination, profile }, outcome.snapshot, new Date()));
 }

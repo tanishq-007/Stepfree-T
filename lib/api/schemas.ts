@@ -54,7 +54,14 @@ export const AlternativesQuerySchema = z.object({
 export const StationFilterQuerySchema = z.object({ stationId: z.string().min(1).optional() });
 
 export const DemoQuerySchema = z.object({
-  scenario: z.enum(["elevator-outage-alewife", "all-clear", "api-down"]),
+  scenario: z.enum([
+    "elevator-outage-alewife",
+    "backup-elevator-alewife",
+    "plan-b-davis",
+    "planned-outage",
+    "all-clear",
+    "api-down",
+  ]),
 });
 
 export const ExplanationItemSchema = z.object({ alertId: z.string(), text: z.string().min(1).max(1200) });

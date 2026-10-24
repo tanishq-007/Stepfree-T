@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
+  CheckCircle2,
   RefreshCw,
   Radio,
   MessageSquareText,
@@ -14,19 +15,24 @@ import type { Alert, Trip } from "@/lib/types";
 import AlertCard from "@/components/AlertCard";
 import AlternativeCard from "@/components/AlternativeCard";
 import DataSourceBadge from "@/components/DataSourceBadge";
+import LaterTodayCard from "@/components/LaterTodayCard";
+import PlanBCard from "@/components/PlanBCard";
 import StatusBanner from "@/components/StatusBanner";
 import RouteSchematic from "@/components/RouteSchematic";
 import StatusSkeleton from "@/components/StatusSkeleton";
-import { useDemoScenario } from "@/lib/client/demo-store";
+import { LATER_TODAY_HOURS } from "@/lib/engine/constants";
+import { setDemoScenario, useDemoScenario } from "@/lib/client/demo-store";
+import { formatTime } from "@/lib/client/format";
 import { loadTrip } from "@/lib/client/storage";
 import { useStatus } from "@/lib/client/use-status";
-import type { ExplainPayload, StatusResponse } from "@/lib/client/types";
+import { DEMO_SCENARIOS, type ExplainPayload, type StatusResponse } from "@/lib/client/types";
 
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? "unknown time"
-    : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+/** One line, inside the verdict banner, that says where the answer comes from. */
+function dataLine(result: StatusResponse): string {
+  const time = formatTime(result.fetchedAt);
+  if (result.dataSource === "demo") return "Based on simulated demo data, not the real subway.";
+  if (result.dataSource === "snapshot") return `According to a saved copy of MBTA data from ${time}.`;
+  return `According to MBTA data updated at ${time}.`;
 }
 
 function problemStationName(result: StatusResponse): string | undefined {
@@ -68,8 +74,12 @@ function Result({
     result.trip.origin && result.trip.destination
       ? `${result.trip.origin.name} to ${result.trip.destination.name}`
       : undefined;
+  // "Use Elevator X instead" gets its own card; the rest explain the verdict.
+  const useElevator = result.reasons.filter((r) => r.code === "ELEVATOR_ALTERNATIVE_AVAILABLE");
   const reasons = result.reasons.filter(
-    (r) => r.code !== "VERIFIED_STEP_FREE" || result.status === "STEP_FREE",
+    (r) =>
+      (r.code !== "VERIFIED_STEP_FREE" || result.status === "STEP_FREE") &&
+      r.code !== "ELEVATOR_ALTERNATIVE_AVAILABLE",
   );
   const usedAI = explanation?.usedAI === true;
 
@@ -78,7 +88,12 @@ function Result({
       {/* Primary column: the verdict first (critical info first on mobile). */}
       <div className="space-y-5 lg:col-span-3">
         <div aria-live="polite">
-          <StatusBanner status={result.status} routeLabel={route} headline={explanation?.summary} />
+          <StatusBanner
+            status={result.status}
+            routeLabel={route}
+            headline={explanation?.summary}
+            dataLine={dataLine(result)}
+          />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -112,6 +127,30 @@ function Result({
           </p>
         ) : null}
 
+        {result.laterToday.length > 0 ? (
+          <LaterTodayCard
+            changes={result.laterToday}
+            stations={[result.trip.origin, result.trip.destination]}
+            hours={LATER_TODAY_HOURS}
+          />
+        ) : null}
+
+        {useElevator.length > 0 ? (
+          <section aria-labelledby="use-elevator-h" className="card animate-fade-in overflow-hidden">
+            <div className="flex items-center gap-2 bg-status-free-tint px-4 py-2.5">
+              <CheckCircle2 className="h-5 w-5 text-status-free" aria-hidden="true" />
+              <h3 id="use-elevator-h" className="text-sm font-bold uppercase tracking-wide text-status-free">
+                Which elevator to use
+              </h3>
+            </div>
+            <ul className="space-y-2 p-4 text-base text-ink">
+              {useElevator.map((r, i) => (
+                <li key={`${r.stationId}-${i}`}>{r.message}</li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
         {result.blockingAlerts.length > 0 ? (
           <section aria-labelledby="blocking-h">
             <h3 id="blocking-h" className="mb-2 text-xl font-bold text-ink">
@@ -139,7 +178,7 @@ function Result({
         ) : null}
       </div>
 
-      {/* Secondary column: route, alternative, reasoning, refresh. */}
+      {/* Secondary column: route, alternative, Plan B, reasoning, refresh. */}
       <aside className="space-y-5 lg:col-span-2">
         <RouteSchematic
           origin={result.trip.origin}
@@ -151,6 +190,8 @@ function Result({
         {result.alternative ? (
           <AlternativeCard station={result.alternative} instead={problemStationName(result)} />
         ) : null}
+
+        {result.planB ? <PlanBCard planB={result.planB} /> : null}
 
         {reasons.length > 0 ? (
           <section aria-labelledby="why-h" className="card p-5">
@@ -187,8 +228,8 @@ const VALUE_PROPS = [
   },
   {
     Icon: ShieldCheck,
-    title: "Verified alternatives",
-    body: "When a station is blocked, we suggest a nearby accessible stop on the same line.",
+    title: "Your Plan B, before anything breaks",
+    body: "We show which elevator your trip depends on, and a checked station to use if it fails.",
   },
 ];
 
@@ -300,6 +341,10 @@ export default function HomePage() {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
+    // Presenter shortcut: /?demo=plan-b-davis turns on that simulated scenario (it is labelled on screen).
+    const requested = new URLSearchParams(window.location.search).get("demo");
+    const scenario = DEMO_SCENARIOS.find((s) => s === requested);
+    if (scenario) setDemoScenario(scenario);
     setTrip(loadTrip());
     setLoaded(true);
   }, []);

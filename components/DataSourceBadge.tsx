@@ -28,15 +28,13 @@ const COPY: Record<DataSource, { text: string; cls: string; Icon: typeof Radio; 
   },
 };
 
+// aria-label is not allowed on a <p> (axe: aria-prohibited-attr; screen readers may ignore it), so the
+// spoken "Data source:" prefix is visually hidden text. The time is shown in words next to the badge.
 export default function DataSourceBadge({ source, fetchedAt }: Props) {
   const c = COPY[source];
   const Icon = c.Icon;
   return (
-    <p
-      className={`chip border px-3 py-1.5 ${c.cls}`}
-      data-source={source}
-      aria-label={`Data source: ${c.text}${fetchedAt ? `, from ${fetchedAt}` : ""}`}
-    >
+    <p className={`chip border px-3 py-1.5 ${c.cls}`} data-source={source} data-fetched-at={fetchedAt}>
       {c.live ? (
         <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
           <span className="absolute inline-flex h-full w-full animate-pulse-dot rounded-full bg-status-free" />
@@ -45,6 +43,7 @@ export default function DataSourceBadge({ source, fetchedAt }: Props) {
       ) : (
         <Icon className="h-4 w-4" aria-hidden="true" />
       )}
+      <span className="sr-only">Data source: </span>
       {c.text}
     </p>
   );

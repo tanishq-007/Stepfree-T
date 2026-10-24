@@ -18,3 +18,12 @@ Owner: Tanishq. Scope: `evaluateTrip`, profile rules, alternatives. Pure functio
 14. THE engine SHALL place every active alert that names a trip station in either `blockingAlerts` or `infoAlerts`.
 15. WHEN the status is not `STEP_FREE` and the data is fresh, THE engine SHALL suggest the nearest (haversine) station that shares a line with the problem station, is `accessible`, has status `STEP_FREE`, and is not a trip endpoint; IF none exists, THEN THE alternative SHALL be `null`.
 16. THE engine SHALL be deterministic: the same trip, snapshot, time and platform map always give the same result.
+
+## Plan B, later today, named elevators
+
+17. WHEN an elevator outage is covered, THE engine SHALL name every verified working elevator that serves the same platform, and SHALL NOT name an unverified one.
+18. WHILE the trip is `STEP_FREE`, THE Plan B check SHALL simulate an outage of each working elevator at both stations, one at a time, and classify it: `has_backup` or `not_on_route` (still `STEP_FREE`), `no_backup` (`NOT_STEP_FREE`), `cannot_check` (`UNKNOWN`).
+19. IF an elevator is `no_backup`, THEN THE Plan B station SHALL be the nearest station on the same line that is `STEP_FREE` with that elevator out and is not a trip endpoint, or `null`.
+20. THE Plan B status SHALL be `fragile` if any elevator is `no_backup`, else `cannot_confirm` if any is `cannot_check`, else `resilient`. WHEN the trip is not `STEP_FREE`, Plan B SHALL be `null`.
+21. WHEN the data is fresh, THE later-today check SHALL report each start time in the next 12 hours at which an alert for a trip station makes the trip worse than it is now and worse than just before that time. WHEN the data is stale, it SHALL report nothing.
+22. Alerts that start after `now` SHALL NOT change the result for `now`.

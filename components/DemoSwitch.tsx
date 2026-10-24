@@ -1,9 +1,7 @@
 "use client";
 import { FlaskConical } from "lucide-react";
 import { setDemoScenario, useDemoScenario } from "@/lib/client/demo-store";
-import { DEMO_LABELS, type DemoScenarioId } from "@/lib/client/types";
-
-const IDS = Object.keys(DEMO_LABELS) as DemoScenarioId[];
+import { DEMO_LABELS, DEMO_SCENARIOS as IDS, type DemoScenarioId } from "@/lib/client/types";
 
 export default function DemoSwitch() {
   const scenario = useDemoScenario();
@@ -22,7 +20,8 @@ export default function DemoSwitch() {
           </span>
           <span className="flex flex-col leading-tight">
             <span className="text-sm font-bold text-ink">Presenter demo mode</span>
-            <span className="text-xs text-ink-muted">Simulated data for demonstrations</span>
+            {/* ink-soft, not ink-muted: muted grey is only 4.2:1 on these tinted backgrounds (AA needs 4.5:1). */}
+            <span className="text-xs text-ink-soft">Simulated data for demonstrations</span>
           </span>
         </span>
 
@@ -42,7 +41,7 @@ export default function DemoSwitch() {
       {on ? (
         <div className="mt-3">
           <label htmlFor="demo-scenario" className="block text-sm font-semibold text-ink">
-            Scenario (Alewife to Park Street)
+            Scenario
           </label>
           <select
             id="demo-scenario"

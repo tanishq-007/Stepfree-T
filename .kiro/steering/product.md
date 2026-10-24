@@ -22,7 +22,10 @@ AccessPath AI tells a rider whether an MBTA subway trip can be done **step-free 
 4. An elevator outage does NOT automatically block a station. If another working elevator serves the same required platform (per `lib/data/platform-map.ts`), the station stays usable. If we cannot verify which platform an elevator serves, the result is `UNKNOWN`, not `STEP_FREE`.
 5. Escalator outages are informational only and never block step-free.
 6. An alert counts only while it is active: now is inside one of its `active_period` ranges.
-7. Out of scope: transfers, buses, Commuter Rail, accounts, push notifications, multiple languages.
+7. When a broken elevator is covered, name the verified backup elevator(s) to use. Never name an unverified elevator.
+8. Plan B (`lib/engine/plan-b.ts`) runs only when the trip is `STEP_FREE` now. It simulates one working elevator out at a time and re-runs the station check. `NOT_STEP_FREE` = single point of failure (with a Plan B station that is `STEP_FREE` with that elevator out, or none). `UNKNOWN` = "could not check", never called a single point of failure. "Resilient" only when no single elevator can break the trip.
+9. Later today (`lib/engine/later-today.ts`) warns only about posted alerts that start in the next 12 hours and make the trip worse than now. Never from stale data. It never changes the "now" result.
+10. Out of scope: transfers, buses, Commuter Rail, accounts, push notifications, multiple languages.
 
 ## Honesty rules
 

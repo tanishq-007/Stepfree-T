@@ -1,7 +1,7 @@
 import { DemoQuerySchema } from "@/lib/api/schemas";
 import { parseQuery } from "@/lib/api/http";
-import { buildDemoSnapshot, DEMO_TRIP } from "@/lib/data/demo-snapshot";
-import { evaluateTrip } from "@/lib/engine/evaluate-trip";
+import { buildTripPayload } from "@/lib/api/trip-payload";
+import { buildDemoSnapshot, demoTrip } from "@/lib/data/demo-snapshot";
 
 export const dynamic = "force-dynamic";
 
@@ -13,17 +13,11 @@ export async function GET(request: Request): Promise<Response> {
 
   const now = new Date();
   const snapshot = buildDemoSnapshot(scenario, now);
-  const trip = { ...DEMO_TRIP, profile: "wheelchair" as const };
-  const result = evaluateTrip(trip, snapshot, now);
+  const trip = { ...demoTrip(scenario), profile: "wheelchair" as const };
   return Response.json({
-    ...result,
+    ...buildTripPayload(trip, snapshot, now),
     simulated: true,
     label: "Simulated demo data",
     scenario,
-    trip: {
-      profile: trip.profile,
-      origin: snapshot.stations.find((s) => s.id === trip.originId) ?? null,
-      destination: snapshot.stations.find((s) => s.id === trip.destinationId) ?? null,
-    },
   });
 }

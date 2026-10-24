@@ -14,5 +14,13 @@
 - [x] Property test g) expired alerts never block
 - [x] Generator coverage test (no vacuous properties)
 - [x] Example tests: elevator covered / uncovered / unmapped / unverified, profiles, freshness, alternatives
+- [x] Name the verified backup elevator in the reason (requirement 17)
+- [x] `plan-b.ts`: simulated single-elevator outages, roles, Plan B station (requirements 18-20)
+- [x] `later-today.ts`: planned outages in the next 12 hours (requirements 21-22)
+- [x] Property tests P11, P12, P13 (Plan B) and a Plan B coverage test
+- [x] Property test P14 and later-today warning properties
+- [x] Property tests P16a-c (conflicting sources), P4 (monotonic), P8 (worst station), P10 (summary honesty)
+- [x] GTFS cross-check script for `platform-map.ts` (`npm run check:gtfs`)
+- [ ] Replace `platform-map.ts` with station graphs from GTFS `pathways.txt` (the facility-id check passed)
 - [ ] Model direction of travel so a one-platform outage does not affect a rider who never uses that platform
 - [ ] Model transfers (out of scope for the hackathon)

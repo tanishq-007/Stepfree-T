@@ -3,9 +3,20 @@
 import type { Alert, DataSnapshot, Facility, Station } from "@/lib/types";
 import { servedPlatforms } from "./platform-map";
 
-export type DemoScenario = "elevator-outage-alewife" | "all-clear" | "api-down";
+export type DemoScenario =
+  | "elevator-outage-alewife"
+  | "backup-elevator-alewife"
+  | "plan-b-davis"
+  | "planned-outage"
+  | "all-clear"
+  | "api-down";
 
 export const DEMO_TRIP = { originId: "place-alfcl", destinationId: "place-pktrm" } as const;
+
+/** Davis has one elevator to its platform, so the Plan B demo starts there. */
+export function demoTrip(scenario: DemoScenario): { originId: string; destinationId: string } {
+  return scenario === "plan-b-davis" ? { originId: "place-davis", destinationId: "place-pktrm" } : DEMO_TRIP;
+}
 
 const RED = ["Red"];
 const station = (id: string, name: string, lat: number, lng: number, lines: string[] = RED): Station => ({
@@ -41,6 +52,8 @@ const FACILITIES: Facility[] = [
   elevator("961", "place-alfcl", "Alewife Elevator 961 (Platform to Russell Field, Rindge Avenue lobby)"),
   elevator("814", "place-alfcl", "Alewife Elevator 814 (Main lobby to street, parking garage)"),
   elevator("815", "place-alfcl", "Alewife Elevator 815 (Main lobby to street, parking garage)"),
+  elevator("816", "place-davis", "Davis Elevator 816 (Platform to lobby)"),
+  elevator("817", "place-davis", "Davis Elevator 817 (Lobby to College Avenue)"),
   { id: "356", stationId: "place-alfcl", type: "escalator", name: "Alewife Escalator 356 (Garage level 2 to level 4)", servesPlatforms: "unknown" },
 ];
 
@@ -75,13 +88,37 @@ function simulatedAlerts(now: Date): Alert[] {
   ];
 }
 
+/** Planned work: both Alewife platform elevators close 3 hours from now, for 4 hours. */
+function plannedAlerts(now: Date): Alert[] {
+  const start = new Date(now.getTime() + 3 * 3_600_000).toISOString();
+  const end = new Date(now.getTime() + 7 * 3_600_000).toISOString();
+  const posted = new Date(now.getTime() - 24 * 3_600_000).toISOString();
+  return ["813", "961"].map((id) => ({
+    id: `demo-planned-${id}`,
+    effect: "ELEVATOR_CLOSURE",
+    header: `[SIMULATED] Alewife Elevator ${id} will be unavailable for planned maintenance.`,
+    description: "Simulated demo alert. Not real MBTA data.",
+    stationIds: ["place-alfcl"],
+    facilityIds: [id],
+    activePeriod: [{ start, end }],
+    severity: 3,
+    updatedAt: posted,
+  }));
+}
+
 export function buildDemoSnapshot(scenario: DemoScenario, now: Date): DataSnapshot {
   const base = { stations: STATIONS, facilities: FACILITIES, source: "demo" as const };
   switch (scenario) {
     case "all-clear":
+    case "plan-b-davis":
       return { ...base, alerts: [], fetchedAt: now.toISOString() };
     case "elevator-outage-alewife":
       return { ...base, alerts: simulatedAlerts(now), fetchedAt: now.toISOString() };
+    case "backup-elevator-alewife":
+      // Only Elevator 813 is out. Elevator 961 reaches the same platform, so the trip stays step-free.
+      return { ...base, alerts: simulatedAlerts(now).filter((a) => a.id !== "demo-elevator-961"), fetchedAt: now.toISOString() };
+    case "planned-outage":
+      return { ...base, alerts: plannedAlerts(now), fetchedAt: now.toISOString() };
     case "api-down":
       // The last good copy is 3 hours old: the engine must refuse to call it step-free.
       return { ...base, alerts: [], fetchedAt: new Date(now.getTime() - 3 * 3_600_000).toISOString() };

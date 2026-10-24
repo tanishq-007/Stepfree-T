@@ -19,6 +19,21 @@
  *                       the same station: the engine compares them as plain strings.
  *  Any elevator NOT listed here is "unknown" and an outage of it makes the result UNKNOWN.
  *
+ *  GTFS CROSS-CHECK (run `npm run check:gtfs`, MBTA GTFS "Fall 2026, version D"):
+ *   - All 68 ids appear in GTFS pathways.txt as elevator pathways at the station listed here.
+ *   - Pairs the engine uses as BACKUPS for each other reach the same platform(s) in GTFS:
+ *     Alewife 813/961, Porter 983/987, Kendall/MIT 866/777 and 756/757, Government Center 720/721,
+ *     Forest Hills 724/842.
+ *   - Single-elevator platforms agree with GTFS: Central 860, 861; Charles/MGH 951, 952;
+ *     Downtown Crossing 869, 870, 891, 892. Davis 816 is the only elevator to its island platform
+ *     (GTFS 70063 + 70064), so it was changed to verified.
+ *   - Still needs a human look: entries where GTFS lists MORE platforms next to the elevator than this
+ *     map does (State 803, 974, 975; North Station 910, 911; Haymarket 906), and Park Street, where GTFS
+ *     splits the westbound Green platform by branch (B, C, D, E) instead of "Copley & West".
+ *   - Platform-to-platform connectors (Downtown Crossing 998/999, Government Center 722/723,
+ *     State 802/967, Park Street 808/979) stay unverified on purpose.
+ *   This is a cross-check against MBTA data, not a site visit.
+ *
  * Covered stations: Alewife, Davis, Porter, Harvard, Central, Kendall/MIT, Charles/MGH,
  * Park Street, Downtown Crossing, South Station, Jackson Square, Forest Hills,
  * Government Center, State, Haymarket, North Station.
@@ -55,7 +70,9 @@ export const PLATFORM_MAP: PlatformMap = {
   "815": entry("place-alfcl", [ENT], false, "Main lobby to street, parking garage"),
 
   // ---- Davis (place-davis): island platform, name says only "Platform" ----
-  "816": entry("place-davis", ["Platform"], false, "Platform to lobby"),
+  // GTFS pathways (Fall 2026 version D): 816 is the only elevator next to the Alewife and Ashmont/Braintree
+  // platform stops (70063, 70064), which share one island. So "Platform" is confirmed and there is no backup.
+  "816": entry("place-davis", ["Platform"], true, "Platform to lobby; GTFS-checked: only elevator to the island platform"),
   "817": entry("place-davis", [ENT], false, "Lobby to College Avenue"),
 
   // ---- Porter (place-portr) ----

@@ -9,6 +9,9 @@ import DataSourceBadge from "@/components/DataSourceBadge";
 import AlertCard from "@/components/AlertCard";
 import AlternativeCard from "@/components/AlternativeCard";
 import TripForm from "@/components/TripForm";
+import PlanBCard from "@/components/PlanBCard";
+import LaterTodayCard from "@/components/LaterTodayCard";
+import type { PlanB } from "@/lib/engine/plan-b";
 import type { Alert, Station } from "@/lib/types";
 
 const alert: Alert = {
@@ -45,9 +48,11 @@ describe("DataSourceBadge", () => {
   ] as const)("%s", (source, text) => {
     const html = renderToStaticMarkup(<DataSourceBadge source={source} />);
     expect(html).toContain(text);
-    // Non-colour signal: the data source is exposed as a data attribute and an aria-label.
+    // Non-colour signal: the data source is exposed as a data attribute and as spoken text.
     expect(html).toContain('data-source="' + source + '"');
-    expect(html).toContain("aria-label=");
+    // aria-label is not allowed on a <p> (axe aria-prohibited-attr), so the prefix is visually hidden text.
+    expect(html).toContain('<span class="sr-only">Data source: </span>');
+    expect(html).not.toContain("aria-label=");
   });
 });
 
@@ -94,5 +99,65 @@ describe("TripForm", () => {
     expect(html).toContain("Save trip");
     expect(html).toContain("min-h-[56px]");
     expect(html).toContain('aria-live="polite"');
+  });
+});
+
+describe("StatusBanner data line", () => {
+  it("shows where the answer comes from inside the banner", () => {
+    const html = renderToStaticMarkup(<StatusBanner status="STEP_FREE" dataLine="According to MBTA data updated at 3:05 PM." />);
+    expect(html).toContain("According to MBTA data updated at 3:05 PM.");
+  });
+});
+
+describe("PlanBCard", () => {
+  const davis: Station = { id: "place-davis", name: "Davis", lines: ["Red"], wheelchairBoarding: "accessible", lat: 1, lng: 2 };
+  const porter: Station = { ...davis, id: "place-portr", name: "Porter" };
+  const base = { stationId: "place-davis", stationName: "Davis" };
+
+  it("names the single point of failure and the Plan B station", () => {
+    const plan: PlanB = {
+      status: "fragile",
+      elevators: [
+        { ...base, facilityId: "816", name: "Davis Elevator 816 (Platform to lobby)", role: "no_backup", alternative: porter },
+        { ...base, facilityId: "817", name: "Davis Elevator 817 (Lobby to College Avenue)", role: "cannot_check", alternative: null },
+      ],
+    };
+    const html = renderToStaticMarkup(<PlanBCard planB={plan} />);
+    expect(html).toContain("Plan B: your trip depends on one elevator");
+    expect(html).toContain("Davis Elevator 816 (Platform to lobby)");
+    expect(html).toContain("use Porter instead");
+    expect(html).toContain("We could not check a backup for 1 elevator");
+    expect(html).toContain('aria-labelledby="planb-h"');
+    expect(html).toContain('aria-hidden="true"');
+  });
+
+  it("says plainly when there is no single point of failure", () => {
+    const html = renderToStaticMarkup(<PlanBCard planB={{ status: "resilient", elevators: [] }} />);
+    expect(html).toContain("Plan B: you have a backup");
+    expect(html).toContain("there is still a step-free way");
+  });
+
+  it("never offers a station when none was checked", () => {
+    const plan: PlanB = { status: "fragile", elevators: [{ ...base, facilityId: "816", name: "Elevator 816", role: "no_backup", alternative: null }] };
+    const html = renderToStaticMarkup(<PlanBCard planB={plan} />);
+    expect(html).toContain("we did not find a checked station nearby");
+    expect(html).not.toContain("instead");
+  });
+});
+
+describe("LaterTodayCard", () => {
+  it("gives the time, the station, what it means, and what to do", () => {
+    const html = renderToStaticMarkup(
+      <LaterTodayCard
+        hours={12}
+        stations={[station, null]}
+        changes={[{ startsAt: "2026-10-24T23:00:00Z", status: "NOT_STEP_FREE", stationIds: ["place-davis"], alerts: [alert] }]}
+      />,
+    );
+    expect(html).toContain("Later today (next 12 hours)");
+    expect(html).toContain("the MBTA plans work at Davis");
+    expect(html).toContain("this trip may not be step-free");
+    expect(html).toContain("check again before you leave");
+    expect(html).toContain("Original MBTA notice");
   });
 });

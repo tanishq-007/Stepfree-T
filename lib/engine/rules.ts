@@ -125,13 +125,20 @@ export function worst(a: AccessStatus, b: AccessStatus): AccessStatus {
 
 type ElevatorOutcome = "covered" | "uncovered" | "unverified" | "not_on_subway_path";
 
-function elevatorLabel(snapshot: DataSnapshot, facilityId: string): string {
+/** The outcome for one broken elevator, plus the verified working elevators that cover for it. */
+interface ElevatorResolution {
+  outcome: ElevatorOutcome;
+  /** Facility ids of verified, working elevators that reach the same platform(s). Only set when covered. */
+  backups: string[];
+}
+
+export function elevatorLabel(snapshot: DataSnapshot, facilityId: string): string {
   return snapshot.facilities.find((f) => f.id === facilityId)?.name ?? `Elevator ${facilityId}`;
 }
 
 /**
  * Is there another WORKING elevator on every platform the broken one serves?
- *  covered     every platform has a working, verified alternative
+ *  covered     every platform has a working, verified alternative (listed in `backups`)
  *  uncovered   some platform has no alternative and we know every working elevator at the station
  *  unverified  we cannot tell (unmapped elevator, unverified mapping, unverified alternative)
  */
@@ -141,25 +148,30 @@ function resolveElevator(
   outaged: Set<string>,
   snapshot: DataSnapshot,
   map: PlatformMap,
-): ElevatorOutcome {
+): ElevatorResolution {
   const own = map[facilityId];
-  if (!own || own.stationId !== station.id || !own.verified) return "unverified";
-  if (own.platforms.length === 0) return "not_on_subway_path";
+  if (!own || own.stationId !== station.id || !own.verified) return { outcome: "unverified", backups: [] };
+  if (own.platforms.length === 0) return { outcome: "not_on_subway_path", backups: [] };
 
   const working = snapshot.facilities.filter(
     (f) => f.type === "elevator" && f.stationId === station.id && !outaged.has(f.id),
   );
   let unverified = false;
+  const backups: string[] = [];
   for (const platform of own.platforms) {
     const serving = working.filter((f) => map[f.id]?.platforms.includes(platform));
-    if (serving.some((f) => map[f.id]?.verified === true)) continue;
+    const verifiedServing = serving.filter((f) => map[f.id]?.verified === true);
+    if (verifiedServing.length > 0) {
+      for (const f of verifiedServing) if (!backups.includes(f.id)) backups.push(f.id);
+      continue;
+    }
     if (serving.length > 0 || working.some((f) => !map[f.id])) {
       unverified = true;
       continue;
     }
-    return "uncovered";
+    return { outcome: "uncovered", backups: [] };
   }
-  return unverified ? "unverified" : "covered";
+  return unverified ? { outcome: "unverified", backups: [] } : { outcome: "covered", backups };
 }
 
 function combineOutcomes(outcomes: ElevatorOutcome[]): ElevatorOutcome {
@@ -167,6 +179,12 @@ function combineOutcomes(outcomes: ElevatorOutcome[]): ElevatorOutcome {
   if (outcomes.length === 0 || outcomes.includes("unverified")) return "unverified";
   if (outcomes.every((o) => o === "not_on_subway_path")) return "not_on_subway_path";
   return "covered";
+}
+
+/** "A", "A or B", "A, B or C". */
+function orList(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}`;
 }
 
 export function evaluateStation(
@@ -217,7 +235,9 @@ export function evaluateStation(
 
   for (const alert of elevatorAlerts) {
     const ids = ownFacilityIds(alert);
-    const outcome = combineOutcomes(ids.map((id) => resolveElevator(id, station, outaged, snapshot, platformMap)));
+    const resolutions = ids.map((id) => resolveElevator(id, station, outaged, snapshot, platformMap));
+    const outcome = combineOutcomes(resolutions.map((r) => r.outcome));
+    const backups = [...new Set(resolutions.flatMap((r) => r.backups))];
     const label = ids[0] ? elevatorLabel(snapshot, ids[0]) : `An elevator at ${station.name}`;
     if (ids.length === 0 || outcome === "unverified") {
       info.push(alert);
@@ -227,7 +247,12 @@ export function evaluateStation(
       add("ELEVATOR_NO_ALTERNATIVE", `${label} is out and no other elevator serves the same platform.`, "NOT_STEP_FREE");
     } else if (outcome === "covered") {
       info.push(alert);
-      reasons.push({ code: "ELEVATOR_ALTERNATIVE_AVAILABLE", stationId: station.id, message: `${label} is out, but another working elevator serves the same platform.` });
+      const names = backups.map((id) => elevatorLabel(snapshot, id));
+      const message =
+        names.length > 0
+          ? `${label} is out. Use ${orList(names)} instead. ${names.length > 1 ? "Each one reaches" : "It reaches"} the same platform.`
+          : `${label} is out, but another working elevator serves the same platform.`;
+      reasons.push({ code: "ELEVATOR_ALTERNATIVE_AVAILABLE", stationId: station.id, message });
     } else {
       info.push(alert);
       reasons.push({ code: "ELEVATOR_NOT_ON_SUBWAY_PATH", stationId: station.id, message: `${label} is out. It is not on the subway route.` });

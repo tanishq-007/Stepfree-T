@@ -1,11 +1,11 @@
 "use client";
 import { useSyncExternalStore } from "react";
-import type { DemoScenarioId } from "./types";
+import { DEMO_SCENARIOS, type DemoScenarioId } from "./types";
 
 // Demo mode lives in localStorage so the footer switch and the home page stay in sync.
 const KEY = "accesspath.demo";
 const EVENT = "accesspath:demo-change";
-const SCENARIOS: DemoScenarioId[] = ["elevator-outage-alewife", "all-clear", "api-down"];
+const SCENARIOS: DemoScenarioId[] = DEMO_SCENARIOS;
 
 function read(): DemoScenarioId | null {
   try {

@@ -24,7 +24,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
 
         <header className="sticky top-0 z-40 border-b border-hairline bg-white/85 backdrop-blur-md">
-          <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
+          {/* flex-wrap: at 320 px the nav moves under the logo instead of causing sideways scrolling (WCAG 1.4.10). */}
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
             <Link href="/" className="group inline-flex items-center gap-3">
               <Logo />
               <span className="flex flex-col leading-none">
