@@ -38,7 +38,21 @@ export const TripResultSchema = z.object({
   isStale: z.boolean(),
 });
 
-export const ExplainRequestSchema = z.object({ tripResult: TripResultSchema, profile: ProfileSchema });
+/**
+ * Optional journey context (additive). Station names let the AI guard reject text that names a station
+ * the engine did not return. Old clients that send only {tripResult, profile} keep working.
+ */
+export const ExplainContextSchema = z.object({
+  originName: z.string().max(80).optional(),
+  destinationName: z.string().max(80).optional(),
+  route: z.enum(["direct", "transfer", "unknown"]).optional(),
+  transferStationNames: z.array(z.string().max(80)).max(10).optional(),
+  /** Every station name the rider could see, used only to detect invented station mentions. */
+  stationNames: z.array(z.string().max(80)).max(300).optional(),
+});
+export type ExplainContext = z.infer<typeof ExplainContextSchema>;
+
+export const ExplainRequestSchema = z.object({ tripResult: TripResultSchema, profile: ProfileSchema, context: ExplainContextSchema.optional() });
 
 export const StatusQuerySchema = z.object({
   origin: z.string().min(1, "origin is required"),
@@ -55,14 +69,33 @@ export const StationFilterQuerySchema = z.object({ stationId: z.string().min(1).
 
 export const DemoQuerySchema = z.object({
   scenario: z.enum(["elevator-outage-alewife", "all-clear", "api-down"]),
+  // Optional and additive: older clients that send only `scenario` still get the wheelchair result.
+  profile: ProfileSchema.default("wheelchair"),
 });
 
 export const ExplanationItemSchema = z.object({ alertId: z.string(), text: z.string().min(1).max(1200) });
+
+/** Next-step actions are chosen by the templates from the result. The AI may only reword them by id. */
+export const NextStepIdSchema = z.enum(["use-alternative", "read-notice", "refresh", "ask-staff", "check-transfer", "recheck-before-leaving"]);
+export type NextStepId = z.infer<typeof NextStepIdSchema>;
+
+/** Guide content (what the model may produce). */
+export const GuideSchema = z.object({
+  whatHappened: z.string().min(1).max(600),
+  whyItMatters: z.string().min(1).max(600),
+  nextSteps: z.array(z.object({ id: NextStepIdSchema, text: z.string().min(1).max(400) })).min(1).max(6),
+});
+export type GuideContent = z.infer<typeof GuideSchema>;
+
+/** Guide as returned to the client, with where its text came from (drives the "AI-generated" badge). */
+export const GuideResponseSchema = GuideSchema.extend({ source: z.enum(["ai", "template"]) });
+export type Guide = z.infer<typeof GuideResponseSchema>;
 
 export const ExplainResponseSchema = z.object({
   explanations: z.array(ExplanationItemSchema),
   summary: z.string().min(1).max(1200),
   usedAI: z.boolean(),
+  guide: GuideResponseSchema.optional(),
 });
 
 export type ExplainRequest = z.infer<typeof ExplainRequestSchema>;

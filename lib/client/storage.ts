@@ -23,3 +23,8 @@ export function saveTrip(trip: Trip): void {
 export function clearTrip(): void {
   window.localStorage.removeItem(TRIP_KEY);
 }
+
+/** A copy of the trip with a new profile. Station ids are never touched. Pure. */
+export function withProfile(trip: Trip, profile: Trip["profile"]): Trip {
+  return { originId: trip.originId, destinationId: trip.destinationId, profile };
+}

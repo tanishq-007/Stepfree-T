@@ -1,5 +1,6 @@
 import { StatusQuerySchema } from "@/lib/api/schemas";
 import { loadSnapshot, parseQuery } from "@/lib/api/http";
+import { journeyPayload } from "@/lib/api/journey-payload";
 import { evaluateTrip } from "@/lib/engine/evaluate-trip";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,9 @@ export async function GET(request: Request): Promise<Response> {
   if (!outcome.ok) return outcome.response;
   const { snapshot } = outcome;
 
-  const result = evaluateTrip({ originId: origin, destinationId: destination, profile }, snapshot, new Date());
+  const now = new Date();
+  const trip = { originId: origin, destinationId: destination, profile };
+  const result = evaluateTrip(trip, snapshot, now);
   return Response.json({
     ...result,
     trip: {
@@ -21,5 +24,6 @@ export async function GET(request: Request): Promise<Response> {
       origin: snapshot.stations.find((s) => s.id === origin) ?? null,
       destination: snapshot.stations.find((s) => s.id === destination) ?? null,
     },
+    ...(await journeyPayload(trip, result, snapshot, now)),
   });
 }

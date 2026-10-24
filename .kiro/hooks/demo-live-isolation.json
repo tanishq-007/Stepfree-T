@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Guard: demo data never reaches real routes",
+      "trigger": "PostFileSave",
+      "description": "Static check that only app/api/demo/route.ts imports the simulated snapshot, and that it labels responses as simulated. Fails loudly naming the offending file.",
+      "matcher": "(app|lib|components)/.*\\.tsx?$",
+      "action": {
+        "type": "command",
+        "command": "cd \"$(dirname \"$(find . -maxdepth 2 -name vitest.config.ts -not -path \"*/node_modules/*\" -print -quit)\")\" && npx vitest run tests/data/demo-isolation.test.ts",
+        "timeout": 60
+      }
+    }
+  ]
+}

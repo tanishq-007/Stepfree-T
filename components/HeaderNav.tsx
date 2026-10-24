@@ -19,13 +19,13 @@ export default function HeaderNav() {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`btn inline-flex items-center gap-2 px-3 text-sm font-semibold transition-colors ${
+            className={`btn inline-flex items-center gap-2 whitespace-nowrap px-2.5 text-sm font-semibold transition-colors sm:px-3 ${
               active
                 ? "bg-brand-50 text-brand-900"
                 : "text-ink-soft hover:bg-surface-sunken hover:text-ink"
             }`}
           >
-            <Icon className="h-4 w-4" aria-hidden="true" />
+            <Icon className="hidden h-4 w-4 sm:block" aria-hidden="true" />
             <span>{label}</span>
           </Link>
         );

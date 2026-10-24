@@ -1,6 +1,7 @@
 import type { Alert, TripResult, UserProfile } from "@/lib/types";
 import { alertKind } from "@/lib/engine/rules";
-import type { ExplainResponse } from "@/lib/api/schemas";
+import type { ExplainContext, ExplainResponse } from "@/lib/api/schemas";
+import { problemReasons, templateGuide } from "./guide";
 
 // Plain-language templates (grade 6). Used when there is no ANTHROPIC_API_KEY or the model fails.
 // Every text says what is wrong, what it means for this rider, and what to do next.
@@ -56,18 +57,28 @@ export function templateSummary(result: TripResult, profile: UserProfile): strin
       return alt
         ? `This trip is not step-free right now. Try ${alt.name} instead. It is on the same line, and we checked that it is accessible and has no problems.`
         : "This trip is not step-free right now. We did not find a checked station nearby on the same line. Ask a station worker, or plan a different route.";
-    case "UNKNOWN":
-      return result.isStale
-        ? `We cannot tell if this trip is step-free. Our MBTA data was last checked ${minutesAgo(result.fetchedAt)}, which is too old to trust. Press Refresh. If it still fails, ask a station worker before you go.`
-        : `We cannot confirm that this trip is step-free. Some information is missing${alt ? `. Try ${alt.name} instead, which we did check` : ""}. Ask a station worker, or check again before you leave.`;
+    case "UNKNOWN": {
+      if (result.isStale) {
+        return `We cannot tell if this trip is step-free. Our MBTA data was last checked ${minutesAgo(result.fetchedAt)}, which is too old to trust. Press Refresh. If it still fails, ask a station worker before you go.`;
+      }
+      const top = problemReasons(result)[0]?.code;
+      if (top === "TRANSFER_NOT_CHECKED") {
+        return "We cannot confirm this whole trip is step-free. Your start and end stations look fine, but the trip needs a change of line and we do not check transfer stations.";
+      }
+      if (top === "ROUTE_UNKNOWN") {
+        return "We cannot confirm this whole trip is step-free. We could not work out how these two stations connect on the subway.";
+      }
+      return `We cannot confirm that this trip is step-free. Some information is missing${alt ? `. Try ${alt.name} instead, which we did check` : ""}. Ask a station worker, or check again before you leave.`;
+    }
   }
 }
 
-export function fallbackExplanation(result: TripResult, profile: UserProfile): ExplainResponse {
+export function fallbackExplanation(result: TripResult, profile: UserProfile, context?: ExplainContext): ExplainResponse {
   const alerts = [...result.blockingAlerts, ...result.infoAlerts];
   return {
     explanations: alerts.map((a) => ({ alertId: a.id, text: templateForAlert(a, profile, result) })),
     summary: templateSummary(result, profile),
     usedAI: false,
+    guide: templateGuide(result, profile, context),
   };
 }

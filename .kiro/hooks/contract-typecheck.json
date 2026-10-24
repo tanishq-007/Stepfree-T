@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Shared contract changed: typecheck",
+      "trigger": "PostFileSave",
+      "description": "When the shared contract (lib/types.ts, API schemas, client response types) is saved, typecheck the whole project so every consumer of the contract is checked.",
+      "matcher": "lib/(types|api/schemas|client/types)\\.ts$",
+      "action": {
+        "type": "command",
+        "command": "cd \"$(dirname \"$(find . -maxdepth 2 -name vitest.config.ts -not -path \"*/node_modules/*\" -print -quit)\")\" && npx tsc --noEmit",
+        "timeout": 120
+      }
+    }
+  ]
+}

@@ -66,6 +66,29 @@ summary {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm font-semibold;
   }
 
+  /* Section heading used by result panels. */
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-wider text-ink-muted;
+  }
+
+  /* The verdict re-mounts on every scenario/profile change (key=status) so this plays once per change. */
+  .verdict-enter {
+    animation: verdict-enter 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  @keyframes verdict-enter {
+    0% { opacity: 0; transform: translateY(6px) scale(0.985); }
+    100% { opacity: 1; transform: none; }
+  }
+
+  /* Map container controls: keep MapLibre's buttons at a 44px touch target. */
+  .transit-map .maplibregl-ctrl-group button {
+    width: 44px;
+    height: 44px;
+  }
+  .transit-map .maplibregl-ctrl-attrib {
+    font-size: 11px;
+  }
+
   /* Loading skeleton */
   .skeleton {
     @apply relative overflow-hidden rounded-xl bg-surface-sunken;
@@ -92,7 +115,8 @@ summary {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
-  .skeleton::after {
+  .skeleton::after,
+  .verdict-enter {
     animation: none !important;
   }
 }

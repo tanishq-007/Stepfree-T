@@ -14,8 +14,8 @@ export async function POST(request: Request): Promise<Response> {
   const parsed = ExplainRequestSchema.safeParse(body);
   if (!parsed.success) return badRequest(parsed.error.flatten());
 
-  const { tripResult, profile } = parsed.data;
-  const explanation = await explainTrip(tripResult, profile); // never throws
+  const { tripResult, profile, context } = parsed.data;
+  const explanation = await explainTrip(tripResult, profile, {}, context); // never throws
   return Response.json({
     ...explanation,
     dataSource: tripResult.dataSource,

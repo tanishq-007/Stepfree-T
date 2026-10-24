@@ -22,7 +22,12 @@ AccessPath AI tells a rider whether an MBTA subway trip can be done **step-free 
 4. An elevator outage does NOT automatically block a station. If another working elevator serves the same required platform (per `lib/data/platform-map.ts`), the station stays usable. If we cannot verify which platform an elevator serves, the result is `UNKNOWN`, not `STEP_FREE`.
 5. Escalator outages are informational only and never block step-free.
 6. An alert counts only while it is active: now is inside one of its `active_period` ranges.
-7. Out of scope: transfers, buses, Commuter Rail, accounts, push notifications, multiple languages.
+7. Out of scope: checking transfer stations, buses, Commuter Rail, accounts, push notifications, multiple languages.
+8. Only the origin and destination are checked. A trip that needs a change of line, or whose connection
+   cannot be worked out from MBTA route patterns, is shown as `UNKNOWN` even when both ends pass
+   (`presentableStatus()` in `lib/engine/journey.ts`). The engine verdict itself is unchanged and is
+   shown in the evidence trace.
+9. Map markers are each station's own `evaluateStation()` verdict. No outage is not the same as green.
 
 ## Honesty rules
 

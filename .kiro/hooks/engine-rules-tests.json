@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Engine and AI rules: run safety tests",
+      "trigger": "PostFileSave",
+      "description": "When a decision-engine or AI-grounding file is saved, run the engine property tests and the explainer guard tests (not the whole suite, so it stays fast).",
+      "matcher": "lib/(engine|ai)/.*\\.ts$",
+      "action": {
+        "type": "command",
+        "command": "cd \"$(dirname \"$(find . -maxdepth 2 -name vitest.config.ts -not -path \"*/node_modules/*\" -print -quit)\")\" && npx vitest run tests/engine tests/api/journey-intelligence.test.ts",
+        "timeout": 120
+      }
+    }
+  ]
+}

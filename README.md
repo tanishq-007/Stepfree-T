@@ -9,8 +9,9 @@ Hackathon demo. Subway only (Red, Orange, Blue, Green, Mattapan). No transfers, 
 Needs Node.js 20 or newer.
 
 ```bash
-npm install
+npm install              # also copies the MapLibre map worker into public/vendor
 npm run snapshots        # fetch live MBTA data and write lib/data/snapshots/mbta-snapshot.json
+npm run network          # optional: refresh lib/data/snapshots/mbta-network.json (MBTA line geometry)
 npm run build
 npm test                 # unit, API, component and property tests (Vitest + fast-check)
 npm run dev              # http://localhost:3000
@@ -40,7 +41,8 @@ curl "$B/api/alerts?stationId=place-alfcl"
 curl "$B/api/facilities?stationId=place-alfcl"
 curl "$B/api/status?origin=place-alfcl&destination=place-pktrm&profile=wheelchair"
 curl "$B/api/alternatives?stationId=place-alfcl&profile=wheelchair"
-curl "$B/api/demo?scenario=elevator-outage-alewife"      # also: all-clear, api-down
+curl "$B/api/demo?scenario=elevator-outage-alewife"      # also: all-clear, api-down; optional &profile=
+curl $B/api/network                                        # MBTA line geometry (reference only)
 curl -X POST $B/api/explain -H 'content-type: application/json' \
   -d '{"profile":"wheelchair","tripResult":{ ...a /api/status result... }}'
 ```
@@ -69,6 +71,25 @@ The rules live in `lib/engine/` (pure functions, no I/O) and are written in `.ki
 
 Demo mode (switch in the footer, or `/api/demo`) uses a **simulated** snapshot, labelled "Simulated demo data", so a presenter can show a red state on command. Real routes never use it.
 
+## Journey intelligence (spec 05)
+
+- **Journey map** (MapLibre GL + OpenFreeMap tiles). Station markers are each station's own engine
+  verdict, never "green because no alert". Line geometry comes from MBTA canonical route patterns and
+  is labelled as a reference, not a verified itinerary. A keyboard station list mirrors the map; if the
+  map cannot start, a schematic takes its place.
+- **Disruption simulator.** The presenter bar at the top of the trip page switches the three existing
+  scenarios in one click. Everything simulated carries a violet "Simulated scenario" label and the
+  fixed scenario trip is named.
+- **Understand your journey.** What happened, why it affects this profile, what to do next. Next steps
+  are chosen from the data; the AI (if a key is set) may only reword them.
+- **Mobility profiles.** Switch profile on the results page; the engine re-runs and the trip is saved.
+  The comparison shows every profile's real verdict and the one rule that differs (uneven platforms).
+- **How we decided.** An ordered decision trace with times only where the data has them.
+- **Transfers.** The engine checks only the two endpoint stations. A trip that needs a change of line is
+  shown as "Cannot confirm" with the likely transfer station named.
+
+Spec, steering, hooks and the development journal: `.kiro/specs/05-journey-intelligence/`.
+
 ## Project layout
 
 ```
@@ -90,7 +111,7 @@ Owners: data = Himani, engine = Tanishq, UI and deploy = Aatmaj, AI and integrat
 ## Known limitations
 
 - **The platform map is only partly verified.** It was built by reading MBTA facility names, not by visiting stations. It covers 16 stations; 29 of the 68 entries are marked `verified: false` (inferred). Every entry needs a human check. Elevators outside these 16 stations are unmapped, so an outage there gives UNKNOWN.
-- No transfers, buses or Commuter Rail. A trip is one origin and one destination.
+- No transfers, buses or Commuter Rail. A trip is one origin and one destination. Transfer stations are named but not checked, so such trips show "Cannot confirm".
 - Direction of travel is not modelled. An elevator outage is judged on every platform that elevator serves, so a result can be more cautious than needed.
 - Street-entrance elevators are treated as an "Entrance" platform with `verified: false`, so an outage there usually gives UNKNOWN.
 - A station-closure alert for one direction (for example "skipping Saint Paul Street outbound") blocks the whole station.
@@ -103,4 +124,5 @@ Owners: data = Himani, engine = Tanishq, UI and deploy = Aatmaj, AI and integrat
 - `/api/explain` has no rate limiting. Add one before a public deploy if you set `ANTHROPIC_API_KEY`.
 - The UI was checked in a headless WebKit browser (save a trip, live result, demo mode). No automated accessibility audit (axe/Lighthouse), screen reader pass, or real-phone test has been done.
 - Not deployed to Vercel.
+- The map needs WebGL and the OpenFreeMap tile server. Without them it falls back to a schematic; verdicts and explanations are unaffected.
 - The TypeScript version is pinned to 5.x: Next 15 cannot read `tsconfig` paths with the TypeScript 7 native compiler.
