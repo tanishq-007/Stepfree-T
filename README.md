@@ -13,8 +13,9 @@ Hackathon demo. Subway only (Red, Orange, Blue, Green, Mattapan). No transfers, 
 Needs Node.js 20 or newer.
 
 ```bash
-npm install
+npm install              # also copies the MapLibre map worker into public/vendor
 npm run snapshots        # fetch live MBTA data and write lib/data/snapshots/mbta-snapshot.json
+npm run network          # optional: refresh lib/data/snapshots/mbta-network.json (MBTA line geometry)
 npm run build
 npm test                 # unit, API, component and property tests (Vitest + fast-check)
 npm run dev              # http://localhost:3000
@@ -50,7 +51,8 @@ curl "$B/api/alerts?stationId=place-alfcl"
 curl "$B/api/facilities?stationId=place-alfcl"
 curl "$B/api/status?origin=place-alfcl&destination=place-pktrm&profile=wheelchair"
 curl "$B/api/alternatives?stationId=place-alfcl&profile=wheelchair"
-curl "$B/api/demo?scenario=elevator-outage-alewife"      # see the demo scenarios below
+curl "$B/api/demo?scenario=elevator-outage-alewife"      # see the demo scenarios below; optional &profile=
+curl $B/api/network                                        # MBTA line geometry (reference only)
 curl "$B/api/restrooms?stationId=place-alfcl&radius=400"   # needs GOOGLE_MAPS_API_KEY
 curl "$B/api/entrances?stationId=place-alfcl"             # names and links work without a key; photos need it
 # pictures: open these in a browser (key needed)
@@ -133,6 +135,25 @@ Set `GOOGLE_MAPS_API_KEY` in `.env.local`. Nothing about the key is ever sent to
 - **More MBTA calls.** The entrance list uses one MBTA call per station (cached an hour), and it also runs when `FORCE_OFFLINE=1`. Without `MBTA_API_KEY` (20 requests a minute) a busy minute can hit the MBTA limit.
 - The entrance card shows "Looking for accessible entrances" while loading, and the restroom card shows nothing while loading, so the page can grow when they arrive. Both show a short error with Try again if something fails.
 - Checked in a real Chrome with axe-core: 0 violations with the cards open, tap targets at least 44 px, no sideways scrolling at 320 px. Not tested with VoiceOver or TalkBack.
+
+## Journey intelligence (spec 05)
+
+- **Journey map** (MapLibre GL + OpenFreeMap tiles). Station markers are each station's own engine
+  verdict, never "green because no alert". Line geometry comes from MBTA canonical route patterns and
+  is labelled as a reference, not a verified itinerary. A keyboard station list mirrors the map; if the
+  map cannot start, a schematic takes its place.
+- **Disruption simulator.** The presenter bar at the top of the trip page switches the three existing
+  scenarios in one click. Everything simulated carries a violet "Simulated scenario" label and the
+  fixed scenario trip is named.
+- **Understand your journey.** What happened, why it affects this profile, what to do next. Next steps
+  are chosen from the data; the AI (if a key is set) may only reword them.
+- **Mobility profiles.** Switch profile on the results page; the engine re-runs and the trip is saved.
+  The comparison shows every profile's real verdict and the one rule that differs (uneven platforms).
+- **How we decided.** An ordered decision trace with times only where the data has them.
+- **Transfers.** The engine checks only the two endpoint stations. A trip that needs a change of line is
+  shown as "Cannot confirm" with the likely transfer station named.
+
+Spec, steering, hooks and the development journal: `.kiro/specs/05-journey-intelligence/`.
 
 ## Project layout
 
@@ -234,10 +255,10 @@ Next, if the team wants it:
 
 ## Known limitations
 
-- **The platform map is only partly verified.** It was built by reading MBTA facility names and then cross-checked against GTFS `pathways.txt`, not by visiting stations. It covers 16 stations; 28 of the 68 entries are marked `verified: false`. Elevators outside these 16 stations are unmapped, so an outage there gives UNKNOWN, and Plan B there says "could not check".
+- **The platform map is only partly verified.** It was built by reading MBTA facility names and then cross-checked against GTFS `pathways.txt`, not by visiting stations. It covers 16 stations; 28 of the 68 entries are marked `verified: false`. Every entry still needs a human check. Elevators outside these 16 stations are unmapped, so an outage there gives UNKNOWN, and Plan B there says "could not check".
 - **Plan B depends on the platform map.** Street-entrance elevators are unverified, so at most stations Plan B lists them under "could not check" and the overall Plan B is "not fully checked" rather than "Resilient".
 - Later today only sees planned outages that the MBTA has already posted, and it looks 12 hours ahead, not to the end of the service day.
-- No transfers, buses or Commuter Rail. A trip is one origin and one destination.
+- No transfers, buses or Commuter Rail. A trip is one origin and one destination. Transfer stations are named but not checked, so such trips show "Cannot confirm", and their Plan B covers the two end stations only.
 - Direction of travel is not modelled. An elevator outage is judged on every platform that elevator serves, so a result can be more cautious than needed.
 - Street-entrance elevators are treated as an "Entrance" platform with `verified: false`, so an outage there usually gives UNKNOWN.
 - A station-closure alert for one direction (for example "skipping Saint Paul Street outbound") blocks the whole station.
@@ -251,4 +272,5 @@ Next, if the team wants it:
 - The `/api/explain` AI rate limit is in memory, per server instance. It caps cost from one client; it is not a security boundary.
 - Accessibility was checked with axe-core and Lighthouse in headless Chrome. No screen reader pass or real-phone test has been done.
 - Not deployed to Vercel.
+- The map needs WebGL and the OpenFreeMap tile server. Without them it falls back to a schematic; verdicts and explanations are unaffected.
 - The TypeScript version is pinned to 5.x: Next 15 cannot read `tsconfig` paths with the TypeScript 7 native compiler.

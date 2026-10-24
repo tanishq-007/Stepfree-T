@@ -24,12 +24,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
 
         <header className="sticky top-0 z-40 border-b border-hairline bg-white/85 backdrop-blur-md">
-          {/* flex-wrap: at 320 px the nav moves under the logo instead of causing sideways scrolling (WCAG 1.4.10). */}
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
-            <Link href="/" className="group inline-flex items-center gap-3">
+          {/* flex-wrap: at 320 px the nav moves under the logo instead of causing sideways scrolling (WCAG 1.4.10).
+              max-w-7xl matches <main>, so the header lines up with the map dashboard. */}
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
+            <Link href="/" className="group inline-flex min-w-0 items-center gap-2 sm:gap-3">
               <Logo />
               <span className="flex flex-col leading-none">
-                <span className="text-lg font-extrabold tracking-tight text-ink">
+                <span className="whitespace-nowrap text-base font-extrabold tracking-tight text-ink sm:text-lg">
                   AccessPath <span className="text-brand-700">AI</span>
                 </span>
                 <span className="mt-0.5 hidden text-xs font-medium text-ink-muted sm:block">
@@ -41,12 +42,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:py-8">
+        <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:py-8">
           {children}
         </main>
 
         <footer className="mt-4 border-t border-hairline bg-white">
-          <div className="mx-auto max-w-5xl px-4 py-6">
+          <div className="mx-auto max-w-7xl px-4 py-6">
             <DemoSwitch />
             <p className="mt-5 text-sm text-ink-muted">
               Data from the MBTA. Always check with station staff if you are unsure. This is a

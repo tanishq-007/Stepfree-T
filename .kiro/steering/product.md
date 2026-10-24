@@ -25,7 +25,18 @@ AccessPath AI tells a rider whether an MBTA subway trip can be done **step-free 
 7. When a broken elevator is covered, name the verified backup elevator(s) to use. Never name an unverified elevator.
 8. Plan B (`lib/engine/plan-b.ts`) runs only when the trip is `STEP_FREE` now. It simulates one working elevator out at a time and re-runs the station check. `NOT_STEP_FREE` = single point of failure (with a Plan B station that is `STEP_FREE` with that elevator out, or none). `UNKNOWN` = "could not check", never called a single point of failure. "Resilient" only when no single elevator can break the trip.
 9. Later today (`lib/engine/later-today.ts`) warns only about posted alerts that start in the next 12 hours and make the trip worse than now. Never from stale data. It never changes the "now" result.
-10. Out of scope: transfers, buses, Commuter Rail, accounts, push notifications, multiple languages.
+10. Only the origin and destination are checked. A trip that needs a change of line, or whose connection
+    cannot be worked out from MBTA route patterns, is shown as `UNKNOWN` even when both ends pass
+    (`presentableStatus()` in `lib/engine/journey.ts`). The engine verdict itself is unchanged and is
+    shown in the evidence trace. Plan B for such a trip says it covers the two end stations only.
+11. Map markers are each station's own `evaluateStation()` verdict. No outage is not the same as green.
+12. One Plan B slot, two kinds that never appear together: a problem now shows the engine's verified
+    alternative station ("Plan B for right now"); a step-free trip shows `planB()` ("Plan B if an elevator
+    breaks", not needed now). On the map they differ by label and colour (green "Recommended alternative"
+    vs blue "Backup if an elevator fails").
+13. A trip picked on the map is "Not checked yet" until it is checked. The previous trip's verdict and
+    Plan B are never shown as if they applied to it.
+14. Out of scope: checking transfer stations, buses, Commuter Rail, accounts, push notifications, multiple languages.
 
 ## Honesty rules
 

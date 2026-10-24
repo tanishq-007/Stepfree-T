@@ -16,10 +16,11 @@ export async function POST(request: Request): Promise<Response> {
   const parsed = ExplainRequestSchema.safeParse(body);
   if (!parsed.success) return badRequest(parsed.error.flatten());
 
-  const { tripResult, profile } = parsed.data;
-  // Only paid AI calls are limited. Over the limit the rider still gets plain-language templates.
+  const { tripResult, profile, context } = parsed.data;
+  // Only paid AI calls are limited. Over the limit the rider still gets the plain-language templates,
+  // including the grounded guide, built from the same journey context.
   const aiAllowed = !process.env.ANTHROPIC_API_KEY || explainAiLimiter.take(clientKey(request));
-  const explanation = aiAllowed ? await explainTrip(tripResult, profile) : fallbackExplanation(tripResult, profile); // never throws
+  const explanation = aiAllowed ? await explainTrip(tripResult, profile, {}, context) : fallbackExplanation(tripResult, profile, context); // never throws
   return Response.json(
     {
       ...explanation,

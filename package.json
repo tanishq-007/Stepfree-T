@@ -9,11 +9,16 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "snapshots": "tsx scripts/refresh-snapshots.ts",
+    "network": "tsx scripts/refresh-network.ts",
     "check:gtfs": "tsx scripts/check-gtfs-platforms.ts",
-    "a11y": "tsx scripts/a11y-audit.ts"
+    "a11y": "tsx scripts/a11y-audit.ts",
+    "postinstall": "node scripts/copy-map-worker.mjs",
+    "prebuild": "node scripts/copy-map-worker.mjs",
+    "predev": "node scripts/copy-map-worker.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.544.0",
+    "maplibre-gl": "6.15.0",
     "next": "^15.5.28",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

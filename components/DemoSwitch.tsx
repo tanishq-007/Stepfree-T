@@ -1,18 +1,16 @@
 "use client";
 import { FlaskConical } from "lucide-react";
-import { setDemoScenario, useDemoScenario } from "@/lib/client/demo-store";
-import { DEMO_LABELS, DEMO_SCENARIOS as IDS, type DemoScenarioId } from "@/lib/client/types";
+import { setDemoScenario, setPresenter, useDemoScenario, usePresenter } from "@/lib/client/demo-store";
+import { DEMO_LABELS, DEMO_ORDER as IDS, type DemoScenarioId } from "@/lib/client/types";
 
+/** Footer entry point for presenter mode. Shares the store with PresenterBar. */
 export default function DemoSwitch() {
   const scenario = useDemoScenario();
+  const presenter = usePresenter();
   const on = scenario !== null;
 
   return (
-    <div
-      className={`rounded-2xl border p-4 transition-colors ${
-        on ? "border-violet-300 bg-violet-50" : "border-hairline bg-surface-sunken"
-      }`}
-    >
+    <div className={`rounded-2xl border p-4 transition-colors ${on ? "border-violet-300 bg-violet-50" : "border-hairline bg-surface-sunken"}`}>
       <div className="flex items-center justify-between gap-3">
         <span className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-800">
@@ -25,14 +23,17 @@ export default function DemoSwitch() {
           </span>
         </span>
 
-        <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold">
+        <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-sm font-semibold">
           <span className="sr-only">Turn demo mode on</span>
           <input
             type="checkbox"
             role="switch"
             aria-checked={on}
             checked={on}
-            onChange={(e) => setDemoScenario(e.target.checked ? "elevator-outage-alewife" : null)}
+            onChange={(e) => {
+              setPresenter(e.target.checked);
+              setDemoScenario(e.target.checked ? "all-clear" : null);
+            }}
             className="h-6 w-6 accent-violet-700"
           />
         </label>
@@ -43,22 +44,17 @@ export default function DemoSwitch() {
           <label htmlFor="demo-scenario" className="block text-sm font-semibold text-ink">
             Scenario
           </label>
-          <select
-            id="demo-scenario"
-            value={scenario}
-            onChange={(e) => setDemoScenario(e.target.value as DemoScenarioId)}
-            className="field mt-1 border-violet-300"
-          >
+          <select id="demo-scenario" value={scenario} onChange={(e) => setDemoScenario(e.target.value as DemoScenarioId)} className="field mt-1 border-violet-300">
             {IDS.map((id) => (
               <option key={id} value={id}>
                 {DEMO_LABELS[id]}
               </option>
             ))}
           </select>
-          <p className="mt-2 text-xs font-semibold text-violet-900">
-            Demo mode is ON — results shown are simulated, not live.
-          </p>
+          <p className="mt-2 text-xs font-semibold text-violet-900">Demo mode is ON. Results shown are simulated, not live.</p>
         </div>
+      ) : presenter ? (
+        <p className="mt-2 text-xs text-ink-muted">The simulator controls are shown at the top of the trip page.</p>
       ) : null}
     </div>
   );

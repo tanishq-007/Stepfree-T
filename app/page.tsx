@@ -1,33 +1,43 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
-  RefreshCw,
-  Radio,
+  FlaskConical,
+  Info,
+  LifeBuoy,
+  Map as MapIcon,
   MessageSquareText,
-  ShieldCheck,
+  Radio,
+  RefreshCw,
   Route as RouteIcon,
   Sparkles,
 } from "lucide-react";
-import type { Alert, Trip } from "@/lib/types";
+import type { Alert, Trip, UserProfile } from "@/lib/types";
 import AccessibleEntranceCard from "@/components/AccessibleEntranceCard";
 import AlertCard from "@/components/AlertCard";
-import AlternativeCard from "@/components/AlternativeCard";
 import DataSourceBadge from "@/components/DataSourceBadge";
+import EvidenceTimeline from "@/components/EvidenceTimeline";
+import JourneyExplainer from "@/components/JourneyExplainer";
 import LaterTodayCard from "@/components/LaterTodayCard";
-import PlanBCard from "@/components/PlanBCard";
+import PendingTripCard from "@/components/PendingTripCard";
+import PlanBPanel from "@/components/PlanBPanel";
+import PresenterBar from "@/components/PresenterBar";
+import ProfileComparison from "@/components/ProfileComparison";
+import ProfileSwitcher from "@/components/ProfileSwitcher";
 import RestroomCard from "@/components/RestroomCard";
 import StatusBanner from "@/components/StatusBanner";
-import RouteSchematic from "@/components/RouteSchematic";
 import StatusSkeleton from "@/components/StatusSkeleton";
+import JourneyMap from "@/components/map/JourneyMap";
 import { LATER_TODAY_HOURS } from "@/lib/engine/constants";
-import { setDemoScenario, useDemoScenario } from "@/lib/client/demo-store";
+import { setDemoScenario, setPresenter, useDemoScenario, usePresenter } from "@/lib/client/demo-store";
 import { formatTime } from "@/lib/client/format";
-import { loadTrip } from "@/lib/client/storage";
+import { loadTrip, saveTrip, withProfile } from "@/lib/client/storage";
+import { dispatchDraft, draftToTrip, isPending, useTripDraft } from "@/lib/client/trip-draft";
 import { useStatus } from "@/lib/client/use-status";
-import { DEMO_SCENARIOS, type ExplainPayload, type StatusResponse } from "@/lib/client/types";
+import { DEMO_SCENARIOS, DEMO_TRIP_LABEL, shownStatus, type ExplainPayload, type StatusResponse } from "@/lib/client/types";
+import { buildTrace } from "@/lib/engine/trace";
 
 /** One line, inside the verdict banner, that says where the answer comes from. */
 function dataLine(result: StatusResponse): string {
@@ -35,17 +45,6 @@ function dataLine(result: StatusResponse): string {
   if (result.dataSource === "demo") return "Based on simulated demo data, not the real subway.";
   if (result.dataSource === "snapshot") return `According to a saved copy of MBTA data from ${time}.`;
   return `According to MBTA data updated at ${time}.`;
-}
-
-function problemStationName(result: StatusResponse): string | undefined {
-  const reason = result.reasons.find(
-    (r) =>
-      r.code !== "VERIFIED_STEP_FREE" &&
-      !r.code.startsWith("ESCALATOR") &&
-      !r.code.startsWith("ELEVATOR_ALTERNATIVE"),
-  );
-  const stations = [result.trip.origin, result.trip.destination];
-  return stations.find((s) => s?.id === reason?.stationId)?.name;
 }
 
 /** Notices with identical plain-language text become one card. */
@@ -63,196 +62,292 @@ function groupByText(alerts: Alert[], text: Map<string, string>): { alert: Alert
 function Result({
   result,
   explanation,
+  explaining,
+  refreshing,
   checkedAt,
   onRefresh,
+  onProfile,
+  requestedProfile,
+  requestedTrip,
+  onApplyTrip,
 }: {
   result: StatusResponse;
   explanation: ExplainPayload | null;
+  explaining: boolean;
+  refreshing: boolean;
   checkedAt: string;
   onRefresh: () => void;
+  onProfile: (p: UserProfile) => void;
+  /** The profile the rider picked. Can lead the result's profile while a new check is in flight. */
+  requestedProfile: UserProfile;
+  /** The real trip being checked (saved trip), or null for simulated data. */
+  requestedTrip: Trip | null;
+  /** Apply a trip chosen on the map (saves it and checks it through the normal workflow). */
+  onApplyTrip: (trip: Trip) => void;
 }) {
-  const text = new Map(explanation?.explanations.map((e) => [e.alertId, e.text] as const));
-  const route =
-    result.trip.origin && result.trip.destination
-      ? `${result.trip.origin.name} to ${result.trip.destination.name}`
-      : undefined;
-  // "Use Elevator X instead" gets its own card; the rest explain the verdict.
+  const text = useMemo(() => new Map(explanation?.explanations.map((e) => [e.alertId, e.text] as const)), [explanation]);
+  const status = shownStatus(result);
+  const simulated = result.dataSource === "demo";
+  const profile = result.trip.profile;
+  const { origin, destination } = result.trip;
+  const route = origin && destination ? `${origin.name} to ${destination.name}` : undefined;
+  const capNote = result.display?.capped ? result.display.capReasons.map((r) => r.message).join(" ") : undefined;
+  const laterToday = result.laterToday ?? [];
+  // "Use Elevator X instead": the verified backup elevator for an outage that does not block the trip.
   const useElevator = result.reasons.filter((r) => r.code === "ELEVATOR_ALTERNATIVE_AVAILABLE");
-  const reasons = result.reasons.filter(
-    (r) =>
-      (r.code !== "VERIFIED_STEP_FREE" || result.status === "STEP_FREE") &&
-      r.code !== "ELEVATOR_ALTERNATIVE_AVAILABLE",
-  );
-  const usedAI = explanation?.usedAI === true;
   // The two trip stations, once each. The Google cards below hide themselves when there is no Google key.
-  const tripStations = [result.trip.origin, result.trip.destination].filter(
-    (s, i, all): s is NonNullable<typeof s> => s !== null && all.findIndex((o) => o?.id === s.id) === i,
-  );
+  const tripStations = [origin, destination].filter((s, i, all): s is NonNullable<typeof s> => s !== null && all.findIndex((o) => o?.id === s.id) === i);
+
+  // A selection made on the map that has not been checked replaces the verdict with "Not checked yet".
+  const draftState = useTripDraft();
+  const evaluated = { originId: origin?.id ?? null, destinationId: destination?.id ?? null };
+  const pending = isPending(draftState, evaluated);
+  const markers = result.stations;
+  const knownIds = useMemo(() => new Set((markers ?? []).map((m) => m.id)), [markers]);
+  const nameOf = (id: string) => markers?.find((m) => m.id === id)?.name ?? [origin, destination].find((s) => s?.id === id)?.name;
+  const { draft } = draftState;
+  const checkingDraft =
+    pending && refreshing && requestedTrip !== null && requestedTrip.originId === draft.originId && requestedTrip.destinationId === draft.destinationId;
+
+  const steps = useMemo(() => {
+    const byId = new Map((markers ?? []).map((m) => [m.id, m] as const));
+    const check = (s: StatusResponse["trip"]["origin"]) =>
+      s ? { id: s.id, name: s.name, wheelchairBoarding: s.wheelchairBoarding, status: byId.get(s.id)?.status ?? result.status } : null;
+    return buildTrace({
+      result,
+      profile,
+      journey: result.journey ?? { kind: "unknown", reason: "NO_NETWORK" },
+      displayed: result.display ?? { status: result.status, capped: false, capReasons: [] },
+      origin: check(origin),
+      destination: check(destination),
+      checkedAt,
+      stationName: (id) => byId.get(id)?.name,
+    });
+  }, [result, markers, origin, destination, profile, checkedAt]);
+
+  function checkDraft() {
+    const trip = draftToTrip(draft, requestedProfile, knownIds);
+    if (trip) onApplyTrip(trip);
+  }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-5 lg:items-start">
-      {/* Primary column: the verdict first (critical info first on mobile). */}
-      <div className="space-y-5 lg:col-span-3">
-        <div aria-live="polite">
-          <StatusBanner
-            status={result.status}
-            routeLabel={route}
-            headline={explanation?.summary}
-            dataLine={dataLine(result)}
-          />
+    <div className="space-y-5">
+      <div className="grid gap-5 lg:grid-cols-12 lg:items-start">
+        {/* Verdict column. First in the DOM so it is read first and comes first on mobile. */}
+        <div className="space-y-4 lg:col-span-5 lg:col-start-8 lg:row-start-1">
+          {pending ? (
+            <PendingTripCard
+              draft={draft}
+              nameOf={nameOf}
+              knownIds={knownIds}
+              profile={requestedProfile}
+              simulated={simulated}
+              checking={checkingDraft}
+              last={route ? { label: route, status } : null}
+              onCheck={checkDraft}
+              onCancel={() => dispatchDraft({ type: "reset", ...evaluated }, "Changes cancelled. Showing your current trip.")}
+            />
+          ) : (
+            <>
+              <div aria-live="polite" aria-atomic="true">
+                <StatusBanner
+                  key={`${status}-${result.scenario ?? "real"}-${profile}-${origin?.id}-${destination?.id}`}
+                  status={status}
+                  routeLabel={route}
+                  headline={explanation?.summary}
+                  dataLine={dataLine(result)}
+                  simulated={simulated}
+                  capNote={capNote}
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <DataSourceBadge source={result.dataSource} fetchedAt={result.fetchedAt} />
+                {explanation?.usedAI ? (
+                  <span className="chip border border-brand-200 bg-brand-50 px-3 py-1.5 text-brand-800">
+                    <Sparkles className="h-4 w-4" aria-hidden="true" />
+                    AI explained
+                  </span>
+                ) : null}
+                <p className="text-sm text-ink-muted">
+                  Checked {formatTime(checkedAt)} · MBTA data {formatTime(result.fetchedAt)}
+                </p>
+                {refreshing ? (
+                  <p role="status" className="inline-flex items-center gap-1 text-sm font-semibold text-brand-800">
+                    <RefreshCw className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                    Updating…
+                  </p>
+                ) : null}
+              </div>
+
+              {simulated ? (
+                <p role="note" className="rounded-xl border-2 border-violet-300 bg-violet-50 p-3 text-sm font-semibold text-violet-900">
+                  Simulated demo data for the fixed trip {route ?? "in this scenario"}. This is not what is happening in the subway right now, and your saved trip is not affected.
+                </p>
+              ) : null}
+              {result.dataSource === "snapshot" ? (
+                <p role="note" className="rounded-xl border-2 border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-900">
+                  We could not reach the MBTA, so this uses a saved copy from {formatTime(result.fetchedAt)}. It is not live. Press Refresh to try again.
+                </p>
+              ) : null}
+
+              {useElevator.length > 0 ? (
+                <section aria-labelledby="use-elevator-h" className="card animate-fade-in overflow-hidden">
+                  <div className="flex items-center gap-2 border-b border-green-200 bg-status-free-tint px-4 py-2.5">
+                    <CheckCircle2 className="h-5 w-5 text-status-free" aria-hidden="true" />
+                    <h3 id="use-elevator-h" className="text-sm font-bold uppercase tracking-wide text-status-free">
+                      Which elevator to use
+                    </h3>
+                  </div>
+                  <ul className="space-y-2 p-4 text-base text-ink">
+                    {useElevator.map((r, i) => (
+                      <li key={`${r.stationId}-${i}`}>{r.message}</li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+
+              {laterToday.length > 0 ? <LaterTodayCard changes={laterToday} stations={[origin, destination]} hours={LATER_TODAY_HOURS} /> : null}
+
+              <PlanBPanel result={result} interactive />
+            </>
+          )}
+
+          <div className="card space-y-3 p-4">
+            {/* Not disabled while refreshing: disabling the focused radio would drop keyboard focus. A newer
+                pick aborts the older request in useStatus. */}
+            <ProfileSwitcher value={requestedProfile} onChange={onProfile} />
+            <p className="flex items-start gap-2 text-xs text-ink-muted">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              {result.coverage?.note ?? "Only the start and end stations are checked."}
+            </p>
+          </div>
+
+          {pending ? null : (
+            <>
+              {/* Stays enabled during a check so keyboard focus is kept; a second press restarts the check. */}
+              <button type="button" onClick={onRefresh} aria-describedby={refreshing ? "refresh-busy" : undefined} className="btn-primary w-full">
+                <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin motion-reduce:animate-none" : ""}`} aria-hidden="true" />
+                Refresh
+              </button>
+              {refreshing ? (
+                <span id="refresh-busy" className="sr-only">
+                  A check is already running.
+                </span>
+              ) : null}
+            </>
+          )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <DataSourceBadge source={result.dataSource} fetchedAt={result.fetchedAt} />
-          {usedAI ? (
-            <span className="chip border border-brand-200 bg-brand-50 px-3 py-1.5 text-brand-800">
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
-              AI explained
-            </span>
-          ) : null}
-          <p className="text-sm text-ink-muted">
-            Checked {formatTime(checkedAt)} · MBTA data {formatTime(result.fetchedAt)}
-          </p>
+        {/* Map column: left and large on desktop, after the verdict on mobile. */}
+        <div className="lg:col-span-7 lg:col-start-1 lg:row-start-1">
+          <JourneyMap result={result} checkedAt={checkedAt} profile={requestedProfile} onApplyTrip={onApplyTrip} />
         </div>
-
-        {result.dataSource === "demo" ? (
-          <p
-            role="note"
-            className="rounded-xl border-2 border-violet-300 bg-violet-50 p-3 font-semibold text-violet-900"
-          >
-            Simulated demo data. This is not what is happening in the subway right now.
-          </p>
-        ) : null}
-        {result.dataSource === "snapshot" ? (
-          <p
-            role="note"
-            className="rounded-xl border-2 border-amber-300 bg-amber-50 p-3 font-semibold text-amber-900"
-          >
-            We could not reach the MBTA, so this uses a saved copy from {formatTime(result.fetchedAt)}.
-            It is not live. Press Refresh to try again.
-          </p>
-        ) : null}
-
-        {result.laterToday.length > 0 ? (
-          <LaterTodayCard
-            changes={result.laterToday}
-            stations={[result.trip.origin, result.trip.destination]}
-            hours={LATER_TODAY_HOURS}
-          />
-        ) : null}
-
-        {useElevator.length > 0 ? (
-          <section aria-labelledby="use-elevator-h" className="card animate-fade-in overflow-hidden">
-            <div className="flex items-center gap-2 bg-status-free-tint px-4 py-2.5">
-              <CheckCircle2 className="h-5 w-5 text-status-free" aria-hidden="true" />
-              <h3 id="use-elevator-h" className="text-sm font-bold uppercase tracking-wide text-status-free">
-                Which elevator to use
-              </h3>
-            </div>
-            <ul className="space-y-2 p-4 text-base text-ink">
-              {useElevator.map((r, i) => (
-                <li key={`${r.stationId}-${i}`}>{r.message}</li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        {result.blockingAlerts.length > 0 ? (
-          <section aria-labelledby="blocking-h">
-            <h3 id="blocking-h" className="mb-2 text-xl font-bold text-ink">
-              Problems on your trip
-            </h3>
-            <ul className="space-y-3">
-              {groupByText(result.blockingAlerts, text).map(({ alert, count }) => (
-                <AlertCard key={alert.id} alert={alert} blocking count={count} explanation={text.get(alert.id)} />
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        {result.infoAlerts.length > 0 ? (
-          <section aria-labelledby="info-h">
-            <h3 id="info-h" className="mb-2 text-xl font-bold text-ink">
-              Other notices
-            </h3>
-            <ul className="space-y-3">
-              {groupByText(result.infoAlerts, text).map(({ alert, count }) => (
-                <AlertCard key={alert.id} alert={alert} blocking={false} count={count} explanation={text.get(alert.id)} />
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        {/* Extra help from Google. It never changes the step-free result above. */}
-        {tripStations.map((s) => (
-          <RestroomCard key={s.id} station={s} />
-        ))}
       </div>
 
-      {/* Secondary column: route, alternative, Plan B, reasoning, accessible entrances, refresh. */}
-      <aside className="space-y-5 lg:col-span-2">
-        <RouteSchematic
-          origin={result.trip.origin}
-          destination={result.trip.destination}
-          status={result.status}
-          alternative={result.alternative}
-        />
+      {pending && route ? (
+        <p role="note" className="flex items-start gap-2 rounded-xl border border-hairline bg-surface-sunken p-3 text-sm font-semibold text-ink-soft">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          The explanation, evidence and alerts below are for your last checked trip, {route}. Check the new trip to update them.
+        </p>
+      ) : null}
 
-        {result.alternative ? (
-          <AlternativeCard station={result.alternative} instead={problemStationName(result)} />
-        ) : null}
+      <JourneyExplainer status={status} profile={profile} explanation={explanation} loading={explaining} simulated={simulated} />
 
-        {result.planB ? <PlanBCard planB={result.planB} /> : null}
+      <div className="grid gap-5 lg:grid-cols-12 lg:items-start">
+        <div className="lg:col-span-7">
+          <EvidenceTimeline steps={steps} simulated={simulated} />
+        </div>
+        <div className="space-y-5 lg:col-span-5">
+          {result.blockingAlerts.length + result.infoAlerts.length > 0 ? (
+            <section aria-labelledby="alerts-h" className="space-y-4">
+              <h2 id="alerts-h" className="text-xl font-extrabold text-ink">
+                MBTA alerts on your trip
+              </h2>
+              {result.blockingAlerts.length > 0 ? (
+                <section aria-labelledby="blocking-h">
+                  <h3 id="blocking-h" className="mb-2 text-base font-bold text-ink">
+                    Problems on your trip
+                  </h3>
+                  <ul className="space-y-3">
+                    {groupByText(result.blockingAlerts, text).map(({ alert, count }) => (
+                      <AlertCard key={alert.id} alert={alert} blocking count={count} explanation={text.get(alert.id)} />
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+              {result.infoAlerts.length > 0 ? (
+                <section aria-labelledby="info-h">
+                  <h3 id="info-h" className="mb-2 text-base font-bold text-ink">
+                    Other notices
+                  </h3>
+                  <ul className="space-y-3">
+                    {groupByText(result.infoAlerts, text).map(({ alert, count }) => (
+                      <AlertCard key={alert.id} alert={alert} blocking={false} count={count} explanation={text.get(alert.id)} />
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+            </section>
+          ) : (
+            <section aria-labelledby="alerts-h" className="card p-5">
+              <h2 id="alerts-h" className="text-base font-bold text-ink">
+                MBTA alerts on your trip
+              </h2>
+              <p className="mt-1 text-sm text-ink-soft">
+                {result.isStale
+                  ? "We did not check alerts: this MBTA data is too old to trust. No alert listed here does not mean there is none."
+                  : "No active MBTA accessibility alerts at your start or end station."}
+              </p>
+            </section>
+          )}
 
-        {reasons.length > 0 ? (
-          <section aria-labelledby="why-h" className="card p-5">
-            <h3 id="why-h" className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-muted">
-              Why we say this
-            </h3>
-            <ul className="list-disc space-y-1.5 pl-5 text-sm text-ink-soft">
-              {reasons.map((r, i) => (
-                <li key={`${r.code}-${r.stationId}-${i}`}>{r.message}</li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
+          {result.profiles ? <ProfileComparison outcomes={result.profiles} current={profile} /> : null}
+        </div>
+      </div>
 
-        {tripStations.map((s) => (
-          <AccessibleEntranceCard key={s.id} station={s} />
-        ))}
-
-        <button type="button" onClick={onRefresh} className="btn-primary w-full">
-          <RefreshCw className="h-5 w-5" aria-hidden="true" />
-          Refresh
-        </button>
-      </aside>
+      {tripStations.length > 0 ? (
+        <section aria-labelledby="stations-help-h" className="space-y-3">
+          <div>
+            <h2 id="stations-help-h" className="text-xl font-extrabold text-ink">
+              At your stations
+            </h2>
+            <p className="text-sm text-ink-soft">
+              {simulated
+                ? "Real entrance and restroom information for these stations. It is not simulated, and it never changes the verdict above."
+                : "Accessible entrances from the MBTA, and nearby restrooms from Google. This never changes the verdict above."}
+            </p>
+          </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            {tripStations.map((s) => (
+              <div key={s.id} className="space-y-4">
+                <AccessibleEntranceCard station={s} />
+                <RestroomCard station={s} />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
 
 const VALUE_PROPS = [
-  {
-    Icon: Radio,
-    title: "Live accessibility updates",
-    body: "We read the MBTA's live elevator and alert data the moment you check.",
-  },
-  {
-    Icon: MessageSquareText,
-    title: "Clear trip-level guidance",
-    body: "One plain-language verdict for your whole trip — no jargon, no guesswork.",
-  },
-  {
-    Icon: ShieldCheck,
-    title: "Your Plan B, before anything breaks",
-    body: "We show which elevator your trip depends on, and a checked station to use if it fails.",
-  },
+  { Icon: Radio, title: "Live accessibility, on a map", body: "We read the MBTA's live elevator and alert data and show every station's step-free status." },
+  { Icon: MessageSquareText, title: "Clear trip-level guidance", body: "One plain-language verdict, what it means for you, and what to do next, with the evidence." },
+  { Icon: LifeBuoy, title: "Your Plan B, before anything breaks", body: "We name the elevator your trip depends on, and a checked station to use if it fails or is already out." },
 ];
 
 const STEPS = [
-  { n: 1, title: "Save your trip", body: "Pick a start, an end, and how you travel." },
-  { n: 2, title: "We check live data", body: "Stations, elevators, and alerts in real time." },
-  { n: 3, title: "Get a clear answer", body: "Step-free, not step-free, or cannot confirm." },
+  { n: 1, title: "Choose your trip", body: "Pick a start, an end, and how you travel, on the map or in a form." },
+  { n: 2, title: "We check live data", body: "Station accessibility, elevators, and alerts from the MBTA." },
+  { n: 3, title: "Get a clear answer", body: "Step-free, not step-free, or cannot confirm, with your Plan B." },
 ];
+
+function startDemo() {
+  setPresenter(true);
+  setDemoScenario("all-clear");
+}
 
 function Landing() {
   return (
@@ -267,46 +362,45 @@ function Landing() {
             Your journey. <span className="text-brand-700">Without barriers.</span>
           </h1>
           <p className="max-w-prose text-lg text-ink-soft">
-            Know whether your MBTA subway trip is step-free before you travel. AccessPath AI reads
-            live accessibility data and tells you in plain words.
+            Know whether your MBTA subway trip is step-free before you travel. AccessPath AI reads live accessibility data, maps it, and tells you in plain words why.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link href="/trip/new" className="btn-primary px-6 text-lg">
               Plan an accessible trip
               <ArrowRight className="h-5 w-5" aria-hidden="true" />
             </Link>
+            <button type="button" onClick={startDemo} className="btn border-2 border-violet-300 bg-white px-5 text-violet-900 hover:bg-violet-50">
+              <FlaskConical className="h-5 w-5" aria-hidden="true" />
+              Try the disruption simulator
+            </button>
           </div>
-          <p className="text-sm text-ink-muted">
-            No trip yet? Turn on presenter demo mode at the bottom of the page to see how it looks.
-          </p>
+          <p className="text-sm text-ink-muted">The simulator uses clearly labelled simulated data for fixed demo trips. It never touches your saved trip.</p>
         </div>
 
-        {/* Transit-inspired schematic (decorative, with hidden label). */}
-        <div className="card animate-fade-in p-6 sm:p-8">
-          <p className="sr-only">
-            Illustration of a step-free route from an origin station to a destination station.
-          </p>
-          <div aria-hidden="true" className="space-y-6">
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-mbta-red text-white shadow-card">
-                <RouteIcon className="h-5 w-5" />
-              </span>
-              <div className="h-1.5 flex-1 rounded-full bg-mbta-red" />
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-mbta-green text-white shadow-card">
-                <RouteIcon className="h-5 w-5" />
-              </span>
-            </div>
-            <div className="space-y-3">
+        {/* Decorative route illustration; no station names or statuses are shown. */}
+        <div className="card animate-fade-in overflow-hidden p-0" aria-hidden="true">
+          <div className="relative h-64 bg-[radial-gradient(circle_at_30%_20%,#e6fffb,transparent_55%),linear-gradient(180deg,#f8fafc,#eef2f7)] sm:h-72">
+            <svg viewBox="0 0 400 260" className="absolute inset-0 h-full w-full" fill="none">
+              <path d="M40 210 C 120 200, 140 120, 210 110 S 330 60, 370 40" stroke="#da291c" strokeWidth="7" strokeLinecap="round" />
+              <path d="M30 70 C 120 90, 170 150, 260 170 S 360 200, 380 215" stroke="#00843d" strokeWidth="7" strokeLinecap="round" opacity="0.85" />
+              <path d="M200 20 L 215 240" stroke="#ed8b00" strokeWidth="7" strokeLinecap="round" opacity="0.8" />
               {[
-                { c: "bg-status-free", w: "w-full", t: "Alewife — step-free" },
-                { c: "bg-status-unknown", w: "w-5/6", t: "Davis — checking elevators" },
-                { c: "bg-status-blocked", w: "w-2/3", t: "Porter — elevator outage" },
-              ].map((row) => (
-                <div key={row.t} className="flex items-center gap-3">
-                  <span className={`h-3 w-3 shrink-0 rounded-full ${row.c}`} />
-                  <span className={`h-9 rounded-xl bg-surface-sunken ${row.w}`} />
-                </div>
+                [40, 210, "#166534"],
+                [210, 110, "#166534"],
+                [370, 40, "#166534"],
+                [260, 170, "#991b1b"],
+                [120, 95, "#4b5563"],
+              ].map(([x, y, c], i) => (
+                <g key={i}>
+                  <circle cx={x as number} cy={y as number} r="13" fill="#fff" stroke="#0f172a" strokeWidth="3" />
+                  <circle cx={x as number} cy={y as number} r="7" fill={c as string} />
+                </g>
               ))}
+            </svg>
+            <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 rounded-xl bg-white/90 p-3 shadow-card">
+              <MapIcon className="h-5 w-5 text-brand-700" />
+              <span className="h-2 flex-1 rounded-full bg-surface-sunken" />
+              <RouteIcon className="h-5 w-5 text-ink-muted" />
             </div>
           </div>
         </div>
@@ -336,9 +430,7 @@ function Landing() {
         <ol className="mt-4 grid gap-5 sm:grid-cols-3">
           {STEPS.map((s) => (
             <li key={s.n} className="flex gap-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-700 text-sm font-bold text-white">
-                {s.n}
-              </span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-700 text-sm font-bold text-white">{s.n}</span>
               <span>
                 <span className="block font-bold text-ink">{s.title}</span>
                 <span className="block text-sm text-ink-soft">{s.body}</span>
@@ -353,46 +445,80 @@ function Landing() {
 
 export default function HomePage() {
   const demo = useDemoScenario();
+  const presenter = usePresenter();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loaded, setLoaded] = useState(false);
+  // Demo profile is separate: the scenario trip is fixed and the saved trip must not change.
+  const [demoProfile, setDemoProfile] = useState<UserProfile>("wheelchair");
   useEffect(() => {
     // Presenter shortcut: /?demo=plan-b-davis turns on that simulated scenario (it is labelled on screen).
     const requested = new URLSearchParams(window.location.search).get("demo");
     const scenario = DEMO_SCENARIOS.find((s) => s === requested);
-    if (scenario) setDemoScenario(scenario);
+    if (scenario) {
+      setPresenter(true);
+      setDemoScenario(scenario);
+    }
     setTrip(loadTrip());
     setLoaded(true);
   }, []);
-  const { state, refresh } = useStatus(trip, demo);
+  const { state, refresh } = useStatus(trip, demo, demoProfile);
+
+  /** A trip picked on the map. Demo data is switched off first so simulated and real data never mix. */
+  function applyTrip(next: Trip) {
+    if (demo) setDemoScenario(null);
+    saveTrip(next);
+    setTrip(next);
+  }
+
+  function changeProfile(p: UserProfile) {
+    if (demo) return setDemoProfile(p);
+    if (!trip) return;
+    const next = withProfile(trip, p);
+    saveTrip(next);
+    setTrip(next);
+  }
 
   if (!loaded) return <StatusSkeleton />;
+  if (!trip && !demo && !presenter) return <Landing />;
 
-  if (!trip && !demo) return <Landing />;
+  // Live/simulated separation at render time: right after demo mode changes, `state` can still hold the
+  // other kind of result for one frame (the fetch effect runs after paint). Never show it.
+  const mismatched = state.phase === "ready" && (state.result.dataSource === "demo") !== Boolean(demo);
+
+  const heading = demo ? `Simulated trip: ${DEMO_TRIP_LABEL[demo]}` : "Your trip";
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Your trip</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{heading}</h1>
         <Link href="/trip/new" className="btn-ghost text-sm">
-          Edit trip
+          {trip ? "Edit trip" : "Plan a real trip"}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </div>
 
-      {state.phase === "loading" || state.phase === "idle" ? <StatusSkeleton /> : null}
+      {presenter ? <PresenterBar /> : null}
+
+      {!trip && !demo ? (
+        <section className="card p-6">
+          <h2 className="text-lg font-bold text-ink">No saved trip yet</h2>
+          <p className="mt-1 text-ink-soft">Pick a scenario above to run the simulator, or plan a real trip to check live MBTA data.</p>
+          <Link href="/trip/new" className="btn-primary mt-4">
+            Plan an accessible trip
+            <ArrowRight className="h-5 w-5" aria-hidden="true" />
+          </Link>
+        </section>
+      ) : null}
+
+      {state.phase === "loading" || mismatched ? <StatusSkeleton /> : null}
+      {state.phase === "idle" && (trip || demo) ? <StatusSkeleton /> : null}
 
       {state.phase === "error" ? (
         <div className="space-y-4">
           <div aria-live="polite">
-            <StatusBanner
-              status="UNKNOWN"
-              headline="We could not check your trip. Press Refresh to try again. If it keeps failing, ask a station worker before you go."
-            />
+            <StatusBanner status="UNKNOWN" headline="We could not check your trip. Press Refresh to try again. If it keeps failing, ask a station worker before you go." />
           </div>
-          <p
-            role="alert"
-            className="rounded-xl border-2 border-status-blocked bg-status-blocked-tint p-3 text-base text-status-blocked"
-          >
+          <p role="alert" className="rounded-xl border-2 border-status-blocked bg-status-blocked-tint p-3 text-base text-status-blocked">
             Problem: {state.message}
           </p>
           <button type="button" onClick={refresh} className="btn-primary w-full">
@@ -402,8 +528,19 @@ export default function HomePage() {
         </div>
       ) : null}
 
-      {state.phase === "ready" ? (
-        <Result result={state.result} explanation={state.explanation} checkedAt={state.checkedAt} onRefresh={refresh} />
+      {state.phase === "ready" && !mismatched ? (
+        <Result
+          result={state.result}
+          explanation={state.explanation}
+          explaining={state.explaining}
+          refreshing={state.refreshing}
+          checkedAt={state.checkedAt}
+          onRefresh={refresh}
+          onProfile={changeProfile}
+          requestedProfile={demo ? demoProfile : (trip?.profile ?? state.result.trip.profile)}
+          requestedTrip={demo ? null : trip}
+          onApplyTrip={applyTrip}
+        />
       ) : null}
     </div>
   );

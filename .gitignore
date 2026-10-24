@@ -8,3 +8,6 @@ out
 next-env.d.ts
 .vercel
 coverage
+
+# Generated from node_modules/maplibre-gl by scripts/copy-map-worker.mjs
+/public/vendor/

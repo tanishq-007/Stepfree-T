@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, AlertTriangle, RefreshCw } from "lucide-react";
 import TripForm from "@/components/TripForm";
+import { setDemoScenario } from "@/lib/client/demo-store";
 import { loadTrip, saveTrip } from "@/lib/client/storage";
 import type { Station, Trip } from "@/lib/types";
 
@@ -89,6 +90,8 @@ export default function NewTripPage() {
           initial={initial}
           onSave={(trip) => {
             saveTrip(trip);
+            // Saving a real trip leaves the simulator, so the rider sees their own trip, never simulated data.
+            setDemoScenario(null);
             router.push("/");
           }}
         />
