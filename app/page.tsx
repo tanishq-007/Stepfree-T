@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { Alert, Trip, UserProfile } from "@/lib/types";
 import AlertCard from "@/components/AlertCard";
-import AlternativeCard from "@/components/AlternativeCard";
+import { AlternativePanel } from "@/components/AlternativeCard";
 import DataSourceBadge from "@/components/DataSourceBadge";
 import EvidenceTimeline from "@/components/EvidenceTimeline";
 import JourneyExplainer from "@/components/JourneyExplainer";
@@ -33,12 +33,6 @@ import { buildTrace } from "@/lib/engine/trace";
 function formatTime(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "unknown time" : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-}
-
-function problemStationName(result: StatusResponse): string | undefined {
-  const reason = result.reasons.find((r) => r.code !== "VERIFIED_STEP_FREE" && !r.code.startsWith("ESCALATOR") && !r.code.startsWith("ELEVATOR_ALTERNATIVE"));
-  const stations = [result.trip.origin, result.trip.destination];
-  return stations.find((s) => s?.id === reason?.stationId)?.name;
 }
 
 /** Notices with identical plain-language text become one card. */
@@ -62,6 +56,7 @@ function Result({
   onRefresh,
   onProfile,
   requestedProfile,
+  onApplyTrip,
 }: {
   result: StatusResponse;
   explanation: ExplainPayload | null;
@@ -72,6 +67,8 @@ function Result({
   onProfile: (p: UserProfile) => void;
   /** The profile the rider picked. Can lead the result's profile while a new check is in flight. */
   requestedProfile: UserProfile;
+  /** Apply a trip chosen on the map (saves it and checks it through the normal workflow). */
+  onApplyTrip: (trip: Trip) => void;
 }) {
   const text = useMemo(() => new Map(explanation?.explanations.map((e) => [e.alertId, e.text] as const)), [explanation]);
   const status = shownStatus(result);
@@ -139,7 +136,7 @@ function Result({
             </p>
           </div>
 
-          {result.alternative ? <AlternativeCard station={result.alternative} instead={problemStationName(result)} /> : null}
+          <AlternativePanel result={result} interactive />
 
           {/* Stays enabled during a check so keyboard focus is kept; a second press restarts the check. */}
           <button type="button" onClick={onRefresh} aria-describedby={refreshing ? "refresh-busy" : undefined} className="btn-primary w-full">
@@ -155,7 +152,7 @@ function Result({
 
         {/* Map column: left and large on desktop, after the verdict on mobile. */}
         <div className="lg:col-span-7 lg:col-start-1 lg:row-start-1">
-          <JourneyMap result={result} checkedAt={checkedAt} />
+          <JourneyMap result={result} checkedAt={checkedAt} profile={requestedProfile} onApplyTrip={onApplyTrip} />
         </div>
       </div>
 
@@ -336,6 +333,13 @@ export default function HomePage() {
   }, []);
   const { state, refresh } = useStatus(trip, demo, demoProfile);
 
+  /** A trip picked on the map. Demo data is switched off first so simulated and real data never mix. */
+  function applyTrip(next: Trip) {
+    if (demo) setDemoScenario(null);
+    saveTrip(next);
+    setTrip(next);
+  }
+
   function changeProfile(p: UserProfile) {
     if (demo) return setDemoProfile(p);
     if (!trip) return;
@@ -404,6 +408,7 @@ export default function HomePage() {
           onRefresh={refresh}
           onProfile={changeProfile}
           requestedProfile={demo ? demoProfile : (trip?.profile ?? state.result.trip.profile)}
+          onApplyTrip={applyTrip}
         />
       ) : null}
     </div>

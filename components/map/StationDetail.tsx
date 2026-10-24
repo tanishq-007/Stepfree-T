@@ -1,4 +1,4 @@
-import { ChevronDown, X } from "lucide-react";
+import { Check, ChevronDown, Flag, MapPin, ShieldCheck, X } from "lucide-react";
 import type { Alert } from "@/lib/types";
 import type { StationMarker } from "@/lib/client/types";
 import { lineStyle } from "@/lib/client/lines";
@@ -37,6 +37,11 @@ export default function StationDetail({
   dataSource,
   fetchedAt,
   onClose,
+  draftEnd,
+  onStartHere,
+  onGoHere,
+  suggestion,
+  headingRef,
 }: {
   marker: StationMarker;
   alerts: Alert[];
@@ -44,6 +49,13 @@ export default function StationDetail({
   dataSource: string;
   fetchedAt: string;
   onClose: () => void;
+  /** Which end of the trip draft this station currently is. */
+  draftEnd?: "origin" | "destination" | null;
+  onStartHere?: () => void;
+  onGoHere?: () => void;
+  /** Present when this station is the engine's recommended alternative. */
+  suggestion?: { why: string; evidence: string[]; instead: string } | null;
+  headingRef?: React.Ref<HTMLHeadingElement>;
 }) {
   const byId = new Map(alerts.map((a) => [a.id, a] as const));
   const own = [
@@ -56,8 +68,15 @@ export default function StationDetail({
     <section aria-labelledby="station-detail-h" className="card animate-fade-in p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          {role ? <p className="eyebrow">{role}</p> : null}
-          <h3 id="station-detail-h" className="text-xl font-extrabold text-ink">
+          {suggestion ? (
+            <p className="chip mb-1 border border-green-300 bg-status-free-tint px-2 py-0 text-xs font-bold text-status-free">
+              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+              Recommended alternative
+            </p>
+          ) : role ? (
+            <p className="eyebrow">{role}</p>
+          ) : null}
+          <h3 id="station-detail-h" ref={headingRef} tabIndex={-1} className="text-xl font-extrabold text-ink outline-none focus-visible:outline">
             {marker.name}
           </h3>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -76,6 +95,49 @@ export default function StationDetail({
           <X className="h-5 w-5" aria-hidden="true" />
         </button>
       </div>
+
+      {onStartHere || onGoHere ? (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {onStartHere ? (
+            <button
+              type="button"
+              onClick={onStartHere}
+              aria-pressed={draftEnd === "origin"}
+              aria-label={draftEnd === "origin" ? `${marker.name} is your start station` : `Start here: set ${marker.name} as your start station`}
+              className={`btn min-h-[44px] border-2 text-sm ${draftEnd === "origin" ? "border-ink bg-ink text-white" : "border-ink/20 bg-white text-ink hover:border-ink"}`}
+            >
+              {draftEnd === "origin" ? <Check className="h-4 w-4" aria-hidden="true" /> : <MapPin className="h-4 w-4" aria-hidden="true" />}
+              {draftEnd === "origin" ? "Your start" : "Start here"}
+            </button>
+          ) : null}
+          {onGoHere ? (
+            <button
+              type="button"
+              onClick={onGoHere}
+              aria-pressed={draftEnd === "destination"}
+              aria-label={draftEnd === "destination" ? `${marker.name} is your end station` : `Go here: set ${marker.name} as your end station`}
+              className={`btn min-h-[44px] border-2 text-sm ${draftEnd === "destination" ? "border-brand-700 bg-brand-700 text-white" : "border-brand-700/30 bg-white text-brand-800 hover:border-brand-700"}`}
+            >
+              {draftEnd === "destination" ? <Check className="h-4 w-4" aria-hidden="true" /> : <Flag className="h-4 w-4" aria-hidden="true" />}
+              {draftEnd === "destination" ? "Your end" : "Go here"}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {suggestion ? (
+        <div className="mt-3 rounded-xl border border-green-200 bg-status-free-tint p-3 text-sm">
+          <p className="font-bold text-status-free">Why it is suggested instead of {suggestion.instead}</p>
+          <p className="mt-1 text-ink-soft">{suggestion.why}</p>
+          {suggestion.evidence.length ? (
+            <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-ink-soft">
+              {suggestion.evidence.map((e) => (
+                <li key={e}>{e}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
 
       <p className="mt-3 text-sm text-ink-soft">{BOARDING[marker.wheelchairBoarding]}</p>
       {reasons.length ? (

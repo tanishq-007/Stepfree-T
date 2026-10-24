@@ -120,3 +120,29 @@ summary {
     animation: none !important;
   }
 }
+
+/* Map selection markers (start pin, end flag). Decorative: text equivalents live in the planner bar. */
+.trip-end-marker {
+  pointer-events: none;
+}
+.trip-end-marker > span {
+  display: flex;
+  height: 28px;
+  width: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px 9999px 9999px 2px;
+  transform: rotate(-45deg);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
+  color: #ffffff;
+}
+.trip-end-marker > span > svg {
+  transform: rotate(45deg);
+}
+.trip-end-origin > span {
+  background: #0f172a;
+}
+.trip-end-destination > span {
+  background: #0f766e;
+}

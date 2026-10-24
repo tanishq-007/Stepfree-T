@@ -81,3 +81,17 @@ Found by running the built app in headless Chromium, not by tests or the type ch
 - Live MBTA end-to-end in the browser. The geometry was fetched live once (to build the committed
   copy) and `/api/network` live parsing is unit-tested with a real trimmed response; browser QA ran
   with `FORCE_OFFLINE=1`.
+
+## Stage H: map trip planning and visual Plan B
+
+- **Draft, not save.** Map picks edit a draft in a tiny store (`lib/client/trip-draft.ts`). Only "Check
+  accessibility" calls the page's existing `saveTrip` + `/api/status` path. A browser check confirms
+  localStorage is unchanged after picking stations, after "Use this station", and until the check.
+- **Plan B adapter instead of Plan B logic.** `alternativeFromResult()` only reads `TripResult.alternative`.
+  The teammate's `planB()` (now on `origin/main`) returns `PlanBElevator.alternative: Station | null`; a
+  second `from...` function can map it into the same `AlternativeView` without touching the UI.
+- **Found in browser QA:** Playwright refuses to click `aria-disabled` buttons, which first looked like a
+  broken Clear/Check flow; it was the harness. The app keeps `aria-disabled` (not `disabled`) so keyboard
+  focus is never dropped.
+- **Snapshot writes:** a `next dev` running in the same folder rewrites `mbta-snapshot.json` after live
+  fetches. QA servers here ran with `SNAPSHOT_WRITE=0`; the snapshot stays out of commits.

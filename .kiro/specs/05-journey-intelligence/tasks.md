@@ -52,3 +52,13 @@ Stages are vertical slices: each one ended with typecheck + tests green.
 - [x] G5 Development journal `journal.md`
 - [ ] G6 Screen reader pass (VoiceOver/NVDA) and an automated axe audit (not done)
 - [ ] G7 Real-device test on a phone (not done; headless Chromium only)
+
+## Stage H: map trip planning + visual Plan B
+- [x] H1 `lib/client/trip-draft.ts` pure draft reducer (start/end can never be the same station) + shared store
+- [x] H2 `components/map/TripPlannerBar.tsx`: start, end, profile, swap, clear, cancel, check (aria-disabled, live region)
+- [x] H3 `StationDetail` "Start here" / "Go here" (aria-pressed, descriptive names, focus stays put)
+- [x] H4 Map: start pin and end flag (shape, not colour), green halo for the engine alternative, red halo for the station it replaces, "Recommended alternative" label; route emphasis only for the evaluated trip
+- [x] H5 Apply through the existing workflow (`saveTrip` + `/api/status`); demo is switched off first, explicitly
+- [x] H6 `lib/client/alternative-view.ts` adapter (engine `alternative` only) + comparison card, "Show on map", "Use this station for my trip" (edits the draft, needs a check)
+- [x] H7 Honest "No verified alternative station is available from the current data."
+- [x] H8 Tests: reducer properties, adapter never invents (property over the engine), markup; 44 browser checks

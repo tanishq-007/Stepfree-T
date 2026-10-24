@@ -9,7 +9,7 @@
 //  - The canvas is decorative for assistive tech: StationList is the accessible equivalent.
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
-import { Map as MlMap, NavigationControl, setWorkerUrl, type GeoJSONSource, type MapLayerMouseEvent } from "maplibre-gl";
+import { Map as MlMap, Marker, NavigationControl, setWorkerUrl, type GeoJSONSource, type MapLayerMouseEvent } from "maplibre-gl";
 import type { AccessStatus } from "@/lib/types";
 import type { RouteRelationship } from "@/lib/engine/journey";
 import type { StationMarker } from "@/lib/client/types";
@@ -34,12 +34,31 @@ export interface TransitMapProps {
   originId?: string;
   destinationId?: string;
   alternativeId?: string;
+  /** The trip station the engine found a problem at (highlighted with a red halo). */
+  problemId?: string;
   transferIds?: string[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onFail: (reason: string) => void;
-  /** Increments on every result; the map re-fits to the trip when it changes. */
-  fitKey: string;
+  /** Stations to frame; the map re-fits whenever `key` changes. */
+  frame: { ids: string[]; key: string };
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+// Pin (start) and flag (end) drawn as HTML markers above the station dot, so the two ends differ by
+// shape, not only colour. Decorative: the planner bar and station list carry the same information as text.
+const PIN_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 12-8 12s-8-7-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+const FLAG_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.33 2q2 0 3.07-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.53"/></svg>';
+
+function endMarkerElement(kind: "origin" | "destination"): HTMLElement {
+  const el = document.createElement("div");
+  el.setAttribute("aria-hidden", "true");
+  el.className = `trip-end-marker trip-end-${kind}`;
+  el.innerHTML = `<span>${kind === "origin" ? PIN_SVG : FLAG_SVG}</span>`;
+  return el;
 }
 
 function webglAvailable(): boolean {
@@ -69,6 +88,8 @@ function stationGeoJSON(p: TransitMapProps): GeoJSON.FeatureCollection<GeoJSON.P
         color: STATUS_HEX[m.status],
         glyph: GLYPH[m.status],
         role: role(m.id),
+        problem: m.id === p.problemId,
+        label: role(m.id) === "alternative" ? `${m.name}\nRecommended alternative` : m.name,
         selected: m.id === p.selectedId,
         // Draw order: plain stations first, the trip on top.
         rank: { station: 0, transfer: 1, alternative: 2, destination: 3, origin: 3 }[role(m.id)],
@@ -179,6 +200,21 @@ export default function TransitMap(props: TransitMapProps) {
         layout: { "line-cap": "round", "line-join": "round" },
         paint: { "line-color": ["get", "color"], "line-width": ["interpolate", ["linear"], ["zoom"], 10, 5, 14, 9] },
       });
+      // Soft halos: green for the engine's alternative, red for the trip station it replaces.
+      map.addLayer({
+        id: "station-halo",
+        type: "circle",
+        source: "stations",
+        filter: ["any", ["==", ["get", "role"], "alternative"], ["==", ["get", "problem"], true]],
+        paint: {
+          "circle-radius": 24,
+          "circle-color": ["case", ["==", ["get", "role"], "alternative"], "#16a34a", "#dc2626"],
+          "circle-opacity": 0.18,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": ["case", ["==", ["get", "role"], "alternative"], "#166534", "#991b1b"],
+          "circle-stroke-opacity": 0.7,
+        },
+      });
       // Halo ring for trip roles (origin/destination/alternative/transfer) and the selected station.
       map.addLayer({
         id: "station-ring",
@@ -188,7 +224,7 @@ export default function TransitMap(props: TransitMapProps) {
         paint: {
           "circle-radius": ["case", ["==", ["get", "selected"], true], 17, ["match", ["get", "role"], ["origin", "destination"], 15, 13]],
           "circle-color": "#ffffff",
-          "circle-stroke-width": ["case", ["==", ["get", "selected"], true], 4, 3],
+          "circle-stroke-width": ["case", ["==", ["get", "selected"], true], 4, ["==", ["get", "role"], "alternative"], 4, 3],
           "circle-stroke-color": ["case", ["==", ["get", "selected"], true], "#0f766e", ["==", ["get", "role"], "alternative"], "#166534", ["==", ["get", "role"], "transfer"], "#b45309", "#0f172a"],
         },
       });
@@ -225,10 +261,10 @@ export default function TransitMap(props: TransitMapProps) {
         source: "stations",
         filter: ["any", ["!=", ["get", "role"], "station"], [">=", ["zoom"], 13.5]],
         layout: {
-          "text-field": ["get", "name"],
+          "text-field": ["get", "label"],
           "text-font": ["Noto Sans Bold"],
           "text-size": ["case", ["!=", ["get", "role"], "station"], 13, 11],
-          "text-offset": [0, 1.5],
+          "text-offset": [0, 1.7],
           "text-anchor": "top",
           "text-optional": true,
         },
@@ -260,25 +296,43 @@ export default function TransitMap(props: TransitMapProps) {
     (map.getSource("stations") as GeoJSONSource | undefined)?.setData(stationGeoJSON(props));
     (map.getSource("lines") as GeoJSONSource | undefined)?.setData(linesGeoJSON(props));
     (map.getSource("segment") as GeoJSONSource | undefined)?.setData(segmentGeoJSON(props));
-  }, [ready, props.markers, props.lines, props.journey, props.selectedId, props.originId, props.destinationId, props.alternativeId, props.transferIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, props.markers, props.lines, props.journey, props.selectedId, props.originId, props.destinationId, props.alternativeId, props.problemId, props.transferIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fit to the trip when the result changes.
+  // Frame the requested stations (new result, a completed map selection, or "Show on map").
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
     const byId = new Map(props.markers.map((m) => [m.id, m] as const));
-    const pts = [props.originId, props.destinationId, props.alternativeId, ...(props.transferIds ?? [])].map((id) => (id ? byId.get(id) : undefined));
-    const b = boundsOf(pts);
+    const b = boundsOf(props.frame.ids.map((id) => byId.get(id)));
     // Bottom padding clears the attribution bar and the station label drawn under the dot.
-    if (b) map.fitBounds(b, { padding: { top: 70, bottom: 95, left: 60, right: 75 }, maxZoom: 14, duration: 900 });
-  }, [ready, props.fitKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (b) map.fitBounds(b, { padding: { top: 80, bottom: 100, left: 60, right: 75 }, maxZoom: 14, duration: prefersReducedMotion() ? 0 : 900 });
+  }, [ready, props.frame.key]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Start pin and end flag for the current selection.
+  const endMarkers = useRef<{ origin: Marker | null; destination: Marker | null }>({ origin: null, destination: null });
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    for (const kind of ["origin", "destination"] as const) {
+      const id = kind === "origin" ? props.originId : props.destinationId;
+      const m = id ? props.markers.find((x) => x.id === id) : undefined;
+      const current = endMarkers.current[kind];
+      if (!m) {
+        current?.remove();
+        endMarkers.current[kind] = null;
+        continue;
+      }
+      if (current) current.setLngLat([m.lng, m.lat]);
+      else endMarkers.current[kind] = new Marker({ element: endMarkerElement(kind), anchor: "bottom", offset: [0, -11] }).setLngLat([m.lng, m.lat]).addTo(map);
+    }
+  }, [ready, props.originId, props.destinationId, props.markers]);
 
   // Fly to a station picked from the list.
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || !props.selectedId) return;
     const m = props.markers.find((x) => x.id === props.selectedId);
-    if (m && !map.getBounds().contains([m.lng, m.lat])) map.easeTo({ center: [m.lng, m.lat], duration: 600 });
+    if (m && !map.getBounds().contains([m.lng, m.lat])) map.easeTo({ center: [m.lng, m.lat], duration: prefersReducedMotion() ? 0 : 600 });
   }, [ready, props.selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
